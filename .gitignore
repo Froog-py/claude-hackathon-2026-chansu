@@ -16,3 +16,6 @@ venv/
 
 # OS
 .DS_Store
+
+# Local model setup artifacts
+ollama_pull.log
