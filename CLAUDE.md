@@ -24,6 +24,20 @@ has the standing rules for the week. This file is the short version.
    framework-agnostic. Reasoning sits behind the model-adapter interface. MCP and multi-model
    are architected-for, not built this week.
 
+## Working cadence
+
+Complements the global rules — kept here because this project is unusually verification-heavy
+(the trust boundary, the acceptance test, the two spikes). Adapted from the
+[andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) CLAUDE.md.
+
+- **Goal-driven, with a real feedback loop.** Turn each task into a checkable success criterion
+  and actually run it — a test, the CLI, an RDKit sanitization — before claiming it works.
+  Evidence before assertions.
+- **Think before coding; surface tradeoffs.** State assumptions, don't hide confusion, and
+  offer 2–3 options on genuine forks (PROJECT.md §15) rather than silently picking.
+- **Surgical changes.** Touch only what the task needs; match surrounding style; don't refactor
+  adjacent code unasked. A rename or refactor changes no behavior.
+
 ## Environment
 
 - **Python 3.12** in `.venv` (RDKit wheels lag the newest CPython — do not use 3.14).
@@ -43,4 +57,5 @@ has the standing rules for the week. This file is the short version.
 - `chansu/reasoning/` — model-adapter interface (Claude adapter lands Day 3).
 - `data/` — compounds, transformations, config. Compound-specific knowledge lives here.
 - `reference-material/` — literature workspace the pipeline reads from.
-- `docs/` — including the local-model handoff spec.
+- `docs/` — the local-model handoff spec and [`gotchas.md`](docs/gotchas.md) (read before
+  touching RDKit / generation / property / environment code).
