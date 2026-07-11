@@ -1,6 +1,6 @@
 """The model-adapter interface (PROJECT.md §10, layer 2).
 
-This is the *contract* a reasoning backend must satisfy to drive DeRisk. Claude is the
+This is the *contract* a reasoning backend must satisfy to drive Chansu. Claude is the
 production backend (adapter added Day 3). A local model is a stretch backend that plugs in
 here or not at all — it must never modify the core or the Claude path (see
 docs/local-model-handoff.md).

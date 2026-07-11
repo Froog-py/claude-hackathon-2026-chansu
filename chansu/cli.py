@@ -1,6 +1,6 @@
 """Minimal Day-1 entry point (PROJECT.md §11's real UI comes later).
 
-    python -m derisk.cli [compound_id]
+    python -m chansu.cli [compound_id]
 
 Loads a compound *from data*, prints its provenance-tagged computed properties, and
 generates one validated analog. The engine is compound-agnostic — everything specific to

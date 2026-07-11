@@ -1,4 +1,4 @@
-# DeRisk — Build Plan
+# Chansu — Build Plan
 
 > Companion to `PROJECT.md`. This is **how** and **when**. Read both at the start of every
 > session. The governing principle below matters more than any single day's task list.
