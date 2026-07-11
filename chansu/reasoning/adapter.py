@@ -82,8 +82,10 @@ class ReasoningModel(Protocol):
         ...
 
     def stream(self, request: ReasoningRequest) -> Iterator[str]:
-        """Yield text chunks as they arrive. Tool calls surface on a final aggregated
-        ``complete``-style response; a non-streaming backend may yield once."""
+        """Yield text chunks as they arrive. **v1 streams text only** — tool calls,
+        ``stop_reason``, and usage are not recoverable from the stream; call ``complete`` for a
+        full response. (A typed-event stream — TextDelta/ToolCallDelta/Completed — is a Day-3
+        upgrade tracked in SOMEDAY.md.) A non-streaming backend may yield once."""
         ...
 
 

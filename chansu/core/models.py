@@ -181,9 +181,12 @@ class Flag:
     override_reason: Optional[str] = None
 
     def override(self, reason: str) -> None:
-        """Record a human override (PROJECT.md §6). The reason is retained."""
+        """Record a human override (PROJECT.md §6). A real, non-empty reason is required —
+        "the override is recorded" is meaningless with a blank one."""
         if not self.overridable:
             raise ValueError(f"Flag {self.code!r} is not overridable")
+        if not reason or not reason.strip():
+            raise ValueError("override reason must be a non-empty string")
         self.overridden = True
         self.override_reason = reason
 

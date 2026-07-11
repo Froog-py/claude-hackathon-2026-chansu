@@ -14,6 +14,7 @@ Nothing in this file names a compound, a functional group, or a reaction. Those 
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Optional
 
 from rdkit import Chem
@@ -40,7 +41,7 @@ def resolve_position(mol: Mol, locator: StructureLocator) -> Optional[int]:
     if not matches:
         return None
     match = matches[0]
-    if locator.target_atom >= len(match):
+    if not 0 <= locator.target_atom < len(match):  # guard negative / out-of-range (no IndexError)
         return None
     return match[locator.target_atom]
 
@@ -73,19 +74,26 @@ def _sanitize(product: Mol) -> tuple[bool, Optional[str], Optional[str]]:
 
 
 def _describe_fallback(
-    transformation: Transformation, position_label: Optional[str], reason: str
+    transformation: Transformation,
+    position_label: Optional[str],
+    reason: str,
+    parent_id: str = "",
+    modified_atom_idx: Optional[int] = None,
 ) -> Analog:
-    """Describe-don't-break: highlight the position and describe the edit in words."""
+    """Describe-don't-break: describe the edit in words, keeping the parent id and — when the
+    site is known — the atom to highlight. Only claims a highlight when there is an atom for it."""
     where = position_label or "the specified position"
+    highlight = " Position highlighted for review." if modified_atom_idx is not None else ""
     return Analog(
-        parent_id="",
+        parent_id=parent_id,
         transformation_id=transformation.id,
         product_smiles=None,
         valid=False,
+        modified_atom_idx=modified_atom_idx,
         describe_only=True,
         description=(
             f"Apply {transformation.name} at {where}. "
-            f"Structure not auto-generated ({reason}); position highlighted for manual review."
+            f"Structure not auto-generated ({reason})." + highlight
         ),
         provenance=Provenance.HYPOTHESIS,
         flags=[Flag(code="describe_only", level=FlagLevel.WARNING, message=reason)],
@@ -110,43 +118,52 @@ def apply_transformation(
     try:
         rxn = AllChem.ReactionFromSmarts(transformation.reaction_smarts)
     except Exception as exc:
-        return [_describe_fallback(transformation, position_label, f"invalid reaction SMARTS: {exc}")]
+        return [_describe_fallback(transformation, position_label, f"invalid reaction SMARTS: {exc}", modified_atom_idx=target_atom_idx)]
     if rxn is None:
-        return [_describe_fallback(transformation, position_label, "invalid reaction SMARTS")]
+        return [_describe_fallback(transformation, position_label, "invalid reaction SMARTS", modified_atom_idx=target_atom_idx)]
 
     try:
         product_sets = rxn.RunReactants((mol,))
     except Exception as exc:
-        return [_describe_fallback(transformation, position_label, f"reaction failed: {exc}")]
+        return [_describe_fallback(transformation, position_label, f"reaction failed: {exc}", modified_atom_idx=target_atom_idx)]
 
+    parent_smiles = Chem.MolToSmiles(mol)
     analogs: dict[str, Analog] = {}
     first_error: Optional[str] = None
+    saw_noop = False
     for product_set in product_sets:
         product = product_set[0]
         site = _reacting_site(product, transformation.reacting_atom_mapnum)
         if target_atom_idx is not None and site != target_atom_idx:
             continue
         ok, smiles, error = _sanitize(product)
-        if ok:
-            analogs.setdefault(
-                smiles,
-                Analog(
-                    parent_id="",
-                    transformation_id=transformation.id,
-                    product_smiles=smiles,
-                    valid=True,
-                    modified_atom_idx=site,
-                    provenance=Provenance.HYPOTHESIS,
-                ),
-            )
-        elif first_error is None:
-            first_error = error
+        if not ok:
+            if first_error is None:
+                first_error = error
+            continue
+        if smiles == parent_smiles:
+            saw_noop = True  # sanitizable but unchanged — the edit did not happen; not an analog
+            continue
+        analogs.setdefault(
+            smiles,
+            Analog(
+                parent_id="",
+                transformation_id=transformation.id,
+                product_smiles=smiles,
+                valid=True,
+                modified_atom_idx=site,
+                provenance=Provenance.HYPOTHESIS,
+            ),
+        )
 
     if not analogs:
-        reason = "no clean structure could be generated"
         if first_error:
-            reason += f" ({first_error})"
-        return [_describe_fallback(transformation, position_label, reason)]
+            reason = f"no clean structure could be generated ({first_error})"
+        elif saw_noop:
+            reason = "transformation produced no change (no-op)"
+        else:
+            reason = "no clean structure could be generated"
+        return [_describe_fallback(transformation, position_label, reason, modified_atom_idx=target_atom_idx)]
 
     return list(analogs.values())
 
@@ -184,7 +201,10 @@ def generate_at_position(
     if atom_idx is None:
         return [
             _describe_fallback(
-                transformation, position.label, "position could not be located on the structure"
+                transformation,
+                position.label,
+                "position could not be located on the structure",
+                parent_id=compound.id,
             )
         ]
 
@@ -194,5 +214,7 @@ def generate_at_position(
     )
     for analog in analogs:
         analog.parent_id = compound.id
-        analog.flags.extend(gate_flags)
+        # Independent per-analog copies — a shared Flag would let one candidate's override
+        # silently mutate another's (the two-way gate's audit meaning must stay candidate-local).
+        analog.flags.extend(replace(flag) for flag in gate_flags)
     return analogs
