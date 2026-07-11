@@ -49,9 +49,15 @@ def _citation(d: Optional[dict]) -> Optional[Citation]:
 
 
 def _locator(d: dict) -> StructureLocator:
-    return StructureLocator(
-        smarts=d["smarts"], target_atom=d.get("target_atom", 0), label=d.get("label")
-    )
+    # Validate at load so a data typo fails fast with a clear message, not later as a silent
+    # miss or an IndexError deep in generation.
+    smarts = d["smarts"]
+    if Chem.MolFromSmarts(smarts) is None:
+        raise ValueError(f"Invalid locator SMARTS: {smarts!r}")
+    target = d.get("target_atom", 0)
+    if not isinstance(target, int) or isinstance(target, bool) or target < 0:
+        raise ValueError(f"Locator target_atom must be a non-negative int, got {target!r}")
+    return StructureLocator(smarts=smarts, target_atom=target, label=d.get("label"))
 
 
 def compound_from_dict(d: dict) -> Compound:

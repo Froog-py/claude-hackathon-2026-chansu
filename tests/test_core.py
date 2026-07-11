@@ -115,6 +115,11 @@ def test_generation_spike_produces_valid_structure():
     assert rdMolDescriptors.CalcMolFormula(analog_mol) == "C26H36O5"  # + one acetyl
     assert tanimoto_similarity(mol, analog_mol) > 0.5  # active core intact
     assert analog.parent_id == "bufalin"
+    # the reported site must be the requested C3-OH atom — a right-formula edit at the wrong
+    # site would otherwise pass unnoticed
+    from chansu.core.generation import resolve_position
+
+    assert analog.modified_atom_idx == resolve_position(mol, position.locator)
 
 
 def test_unlocatable_position_falls_back_to_describe_not_break():
@@ -175,3 +180,78 @@ def test_malformed_reaction_smarts_falls_back_not_crash():
     )  # single '>' instead of '>>'
     analogs = apply_transformation(mol, bad)
     assert len(analogs) == 1 and analogs[0].describe_only and not analogs[0].valid
+
+
+def test_no_op_reaction_is_not_accepted_as_an_analog():
+    """A sanitizable product identical to the parent means the edit did not happen — it must
+    not be emitted as a valid analog (Codex P1: identity reaction was accepted)."""
+    compound = load_compound("bufalin")
+    mol = to_mol(compound)
+    identity = Transformation(id="id", name="identity", reaction_smarts="[C:1]>>[C:1]", reacting_atom_mapnum=1)
+    analogs = apply_transformation(mol, identity)
+    assert not [a for a in analogs if a.valid], "a no-op reaction was accepted as a valid analog"
+    assert analogs[0].describe_only and "no-op" in (analogs[0].error or "")
+
+
+def test_gate_override_is_candidate_local():
+    """Overriding one candidate's flag must not mutate another's (Codex P1: shared Flag objects)."""
+    from chansu.core.models import ImportanceRegion, StructureLocator
+
+    compound = load_compound("bufalin")
+    mol = to_mol(compound)
+    # Flag the C3 site high-importance and generate two candidates at it via two transformations.
+    compound.importance_map = [
+        ImportanceRegion(
+            id="r",
+            locator=StructureLocator(smarts="[CH1][OX2H1]", target_atom=1),
+            importance="high",
+            reason="test region",
+        )
+    ]
+    pos = compound.modifiable_positions[0]
+    a = generate_at_position(compound, mol, load_transformation("o_acetylation"), pos)[0]
+    b = generate_at_position(compound, mol, load_transformation("o_acetylation"), pos)[0]
+    a_flag = next(f for f in a.flags if f.code == "high_importance_region")
+    b_flag = next(f for f in b.flags if f.code == "high_importance_region")
+    assert a_flag is not b_flag  # independent objects
+    a_flag.override("intended edit")
+    assert not b_flag.overridden and b_flag.override_reason is None
+
+
+def test_negative_locator_index_does_not_crash():
+    """A negative target_atom must be rejected at load, and resolve must not raise (Codex P1)."""
+    import pytest
+
+    from chansu.core.loaders import _locator
+    from chansu.core.generation import resolve_position
+    from chansu.core.models import StructureLocator
+
+    with pytest.raises(ValueError):
+        _locator({"smarts": "[CH1][OX2H1]", "target_atom": -99})
+    mol = to_mol(load_compound("bufalin"))
+    assert resolve_position(mol, StructureLocator(smarts="[CH1][OX2H1]", target_atom=-99)) is None
+
+
+def test_unlocatable_fallback_keeps_parent_id_and_no_false_highlight():
+    """The describe-only fallback for an unlocatable site must carry the parent id and must not
+    claim a highlight it cannot provide (Codex P1)."""
+    from chansu.core.models import ModifiablePosition, StructureLocator
+
+    compound = load_compound("bufalin")
+    mol = to_mol(compound)
+    impossible = ModifiablePosition(id="nope", label="nonexistent", locator=StructureLocator(smarts="[Xe]"))
+    analog = generate_at_position(compound, mol, load_transformation("o_acetylation"), impossible)[0]
+    assert analog.parent_id == "bufalin"
+    assert analog.modified_atom_idx is None
+    assert "highlighted" not in (analog.description or "")
+
+
+def test_blank_override_reason_is_rejected():
+    from chansu.core.models import Flag, FlagLevel
+    import pytest
+
+    flag = Flag(code="c", level=FlagLevel.WARNING, message="m")
+    for blank in ("", "   ", "\n"):
+        with pytest.raises(ValueError):
+            flag.override(blank)
+    assert not flag.overridden

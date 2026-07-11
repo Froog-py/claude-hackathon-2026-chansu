@@ -30,3 +30,37 @@ New idea mid-sprint? Write it here and keep building the plan. Scope creep is th
   and locked now though its data (the importance map) arrives Day 3 and the full gate is a Day-4
   deliverable. Kept deliberately (PROJECT.md §8 groups the gate into the generation surface Day 1
   spikes); it is generic and inert until the importance map exists.
+
+## From the Codex core review (deferred; cheap correctness fixes already applied)
+
+Real findings whose *timing* is Day 3+ or a deliberate design call — not fixed now, tracked here.
+
+- **Adapter tool-result turn + typed messages (Day 3, before the Claude adapter).** `Message` is
+  `(role, str)` and can't represent an assistant tool call, a tool result, or a `tool_call_id`.
+  Redesign to a typed content/message model (user text; assistant text + tool calls; tool result
+  with `tool_call_id`, name, content, error flag) before wiring a real backend. Add a two-turn
+  tool-conformance test (request → result → final text); the handoff §6 tool smoke test should
+  actually send a result back.
+- **Typed streaming events (Day 3).** Replace `stream() -> Iterator[str]` with typed events
+  (`TextDelta` / `ToolCallDelta` / `Completed(ReasoningResponse)`) so tool calls / stop_reason /
+  usage are recoverable. v1 docstring now honestly says text-only.
+- **Importance region as a set of atoms (Day 3–4).** An `ImportanceRegion` SMARTS may span many
+  atoms, but the gate compares one resolved atom to one `modified_atom_idx`. Resolve a region to
+  its full atom set, have generation report all changed parent atoms, and gate on set overlap.
+- **Attachment-type compatibility enforcement (Day 2/3, in the matching layer).** Positions and
+  transformations both declare attachment types, but `generate_at_position` doesn't compare them.
+  Decide semantics (nonempty intersection? empty = wildcard?) and enforce with a flagged
+  describe-only result on mismatch.
+- **Fuller attribution / change-set (Day 2/3, with transformation hardening).** No-op products are
+  now rejected; still want to confirm the declared reacting site actually participated (not just
+  "product differs from parent"), and require attribution on the untargeted path.
+- **Reaction cardinality is a hidden assumption (P2).** Engine supplies one reactant and takes
+  `product_set[0]`. Formally constrain transformation data to one reactant / one desired product,
+  add a `maxProducts` guard, or add data-driven product selection.
+- **Contextual loader/model validation (P2).** Malformed JSON / wrong-typed fields surface as raw
+  `KeyError`/`TypeError`; `Analog` can be built in contradictory states. Add a validation boundary
+  with typed errors, distinguishing invalid input from "valid template, no clean candidate."
+- **Wheel omits `data/` (deferred — we run from the repo).** `pip install`'d wheel has no
+  `data/`, so the installed console script exits 2. Real only if we distribute a wheel (we don't
+  this week). Fix later via `importlib.resources` *or* keep data external by design and document
+  it — note the tension with the deliberate engine/data separation (`data/` at repo root).
