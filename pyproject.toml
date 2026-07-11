@@ -1,0 +1,27 @@
+[project]
+name = "derisk"
+version = "0.1.0"
+description = "Generic medicinal-chemistry engine: ground a natural compound in literature and generate citation-backed modification hypotheses. The compound lives in data; the engine stays generic."
+readme = "README.md"
+# RDKit wheels lag the newest CPython; pin below 3.14 until wheels catch up.
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "rdkit>=2024.3",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+derisk = "derisk.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["derisk"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

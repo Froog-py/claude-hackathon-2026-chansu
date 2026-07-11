@@ -1,0 +1,35 @@
+{
+  "id": "bufalin",
+  "name": "Bufalin",
+  "aliases": ["Bufalin"],
+  "structure": {
+    "smiles": "C[C@]12CC[C@@H](C[C@H]1CC[C@@H]3[C@@H]2CC[C@]4([C@@]3(CC[C@@H]4C5=COC(=O)C=C5)O)C)O",
+    "source": "PubChem",
+    "source_id": "CID 9547215",
+    "inchikey": "QEEBRPGZBVVINN-BMPKRDENSA-N",
+    "retrieved": "2026-07-11"
+  },
+  "annotations": {
+    "class": "bufadienolide (cardiotonic steroid)",
+    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with REAL citations on Day 3 and are left empty here so nothing is presented as cited before a citation exists (PROJECT.md §6, §7)."
+  },
+  "modifiable_positions": [
+    {
+      "id": "c3_oh",
+      "label": "C3 secondary hydroxyl",
+      "locator": {"smarts": "[CH1][OX2H1]", "target_atom": 1, "label": "C3-OH oxygen"},
+      "attachment_types": ["hydroxyl", "secondary_alcohol"],
+      "rationale": "Classic modifiable handle; the site of the by-hand localized / self-inactivating design that is this project's ground-truth validation (PROJECT.md §12)."
+    },
+    {
+      "id": "c14_oh",
+      "label": "C14 tertiary hydroxyl",
+      "locator": {"smarts": "[C;H0;X4][OX2H1]", "target_atom": 1, "label": "C14-OH oxygen"},
+      "attachment_types": ["hydroxyl", "tertiary_alcohol"],
+      "rationale": "Tertiary alcohol on the steroid core; a secondary handle option."
+    }
+  ],
+  "importance_map": [],
+  "targets": [],
+  "liabilities": []
+}
