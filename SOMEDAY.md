@@ -5,13 +5,30 @@ New idea mid-sprint? Write it here and keep building the plan. Scope creep is th
 
 ## Stretch goals (from BUILD_PLAN.md — only after must-ship is rock-solid)
 
+- **[#1 stretch] Claude Science MCP connector.** Expose Chansu's core as an MCP server that
+  Claude Science calls via `host.mcp("server", "tool", **kwargs)` from its repl tool. Reference
+  implementation: `github.com/bioteam/claude-science-hpc-integrations`. **Caveat:** Claude
+  Science runs in remote sandbox containers, so a `localhost` MCP server is likely NOT reachable
+  — a public/hosted MCP server is probably required. **Cheaper, unverified alternative:** its
+  Python kernel may be able to `pip install chansu` and import the core directly (no hosted
+  server). If we take that route, the Codex **wheel-omits-`data/`** finding (below) becomes live
+  and must be fixed first. **Do NOT build until the Day-4 must-ship loop works**; keep the core
+  clean/callable (PROJECT.md §10) so the wrapper stays thin. Concrete form of the "MCP server"
+  bullet below.
 - **Thin second compound, added purely as data** — proves the generic model. Highest-value
-  stretch; the acceptance test already guarantees no engine edits are needed.
+  demo stretch; the acceptance test already guarantees no engine edits are needed.
 - **3D viewer** (`stmol` / `py3Dmol`) in the Streamlit UI.
 - **Agentic search-to-approve** into the Reference tab (design the approval gate honestly).
 - **MCP server** exposing the core to external agents (architected for; not built this week).
 - **Model-adapter wired to a second model** — the local-model handoff
   (`docs/local-model-handoff.md`) is this, running on a separate machine.
+
+## Longer-term ambitions (NOT this week, NOT requirements)
+
+- **Publication-grade use.** Chansu may eventually be pushed toward publication-grade scientific
+  use. Do not change scope or add requirements for this now — but when making architectural
+  calls, prefer the option that preserves **reproducibility and auditability** (which the trust
+  boundary + provenance tags already do).
 
 ## Ideas captured during the build
 
