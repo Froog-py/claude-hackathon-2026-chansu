@@ -1,7 +1,7 @@
-# DeRisk — Project Charter
+# Chansu — Project Charter
 
-> **Working title: DeRisk.** (Note: the tool now addresses *any* medicinal-chemistry
-> liability, not only toxicity/risk — a broader name may fit better later. Rename anytime.)
+> **Name: Chansu.** Chán sū (蟾酥) is the traditional preparation bufalin is derived from —
+> the name honors the flagship compound while the tool itself stays compound-agnostic.
 >
 > This is the source of truth for **what** we're building and **why**. Read it at the start
 > of every work session. Update it deliberately, never casually. If a task doesn't serve the

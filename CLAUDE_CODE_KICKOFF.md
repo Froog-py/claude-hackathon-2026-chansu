@@ -8,7 +8,7 @@
 
 ## Context
 
-We are building **DeRisk** (working title), a **Build-track** project for the *Built with
+We are building **Chansu**, a **Build-track** project for the *Built with
 Claude: Life Sciences* hackathon. It is an agentic tool that helps a medicinal chemist take a
 natural compound, ground it in the literature, understand which parts of the molecule matter,
 and generate **grounded, citation-backed hypotheses** for modifying it to fix a liability
@@ -92,8 +92,7 @@ literature pipeline reads from here. You own and maintain it.
 - **Project folder (already exists, contains these three planning docs):**
   `/Users/lukekerner/Projects/claude-hackathon-2026`
 - **Create a new repo from this folder** under Luke's personal GitHub account (`Froog-py`).
-  Distinctive name — suggested `built-with-claude-derisk`; confirm with Luke or use his
-  preferred name. Public.
+  Distinctive name — `claude-hackathon-2026-chansu` (chosen with Luke). Public.
 - **Branching:** `main` is the trunk. All work happens on **feature branches** off `main`,
   created via the **`/start` skill**. Do not commit work directly to `main`.
 

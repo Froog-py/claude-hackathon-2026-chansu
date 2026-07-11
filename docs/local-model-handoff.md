@@ -9,7 +9,7 @@
 
 ## 1. What the system is
 
-**DeRisk** is a medicinal-chemistry tool: given a compound, it grounds the compound in
+**Chansu** is a medicinal-chemistry tool: given a compound, it grounds the compound in
 literature, reasons about which parts of the molecule matter, and generates citation-backed
 hypotheses for modifying it. The reasoning is done by a language model; the numbers are done
 deterministically by RDKit. The production reasoning model is **Claude**.
@@ -23,7 +23,7 @@ test. You do **not** touch anything else in the codebase.
 
 ## 2. The exact interface your backend must conform to
 
-The contract is defined in [`derisk/reasoning/adapter.py`](../derisk/reasoning/adapter.py).
+The contract is defined in [`chansu/reasoning/adapter.py`](../chansu/reasoning/adapter.py).
 Read that file — it is the single source of truth. Summary below.
 
 ### The call signature
@@ -40,7 +40,7 @@ The easiest path is to subclass `BaseReasoningModel` (it gives you a default `st
 wraps `complete`, so you only implement `complete`):
 
 ```python
-from derisk.reasoning.adapter import (
+from chansu.reasoning.adapter import (
     BaseReasoningModel, ReasoningRequest, ReasoningResponse, ToolCall, Usage, ReasoningError,
 )
 
@@ -151,7 +151,7 @@ Two checks, in order.
 backend round-trips:
 
 ```python
-from derisk.reasoning.adapter import EchoReasoningModel, ReasoningRequest, Message, ReasoningModel
+from chansu.reasoning.adapter import EchoReasoningModel, ReasoningRequest, Message, ReasoningModel
 m = EchoReasoningModel()
 assert isinstance(m, ReasoningModel)  # runtime-checkable protocol
 r = m.complete(ReasoningRequest(system="s", messages=[Message("user", "ping")]))
@@ -163,7 +163,7 @@ print("interface OK")
 tool call:
 
 ```python
-from derisk.reasoning.adapter import ReasoningRequest, Message, ToolSpec
+from chansu.reasoning.adapter import ReasoningRequest, Message, ToolSpec
 model = LocalReasoningModel(base_url="http://localhost:11434/v1", model="<your-model>")
 
 # 1) plain reasoning
@@ -204,7 +204,7 @@ path returns a `tool_use` (or a clean `end_turn`); an unreachable endpoint raise
 - **Do not modify the core, the model-adapter interface, or the Claude-backed path.** The
   interface in `adapter.py` is the contract; treat it as read-only. If it genuinely needs a
   change, flag it — don't edit it unilaterally.
-- Put your code in its **own module** (e.g. `derisk/reasoning/local_adapter.py`) and keep any
+- Put your code in its **own module** (e.g. `chansu/reasoning/local_adapter.py`) and keep any
   heavy dependencies **optional** (import them inside your class, not at module top level) so
   the main project runs without them.
 - The local backend **plugs in behind the interface or it doesn't ship.** Nothing on the

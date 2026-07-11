@@ -13,12 +13,12 @@ from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-from derisk.core.generation import apply_transformation, generate_at_position
-from derisk.core.loaders import load_compound, load_transformation, to_mol
-from derisk.core.models import Transformation
-from derisk.core.properties import compute_properties, tanimoto_similarity
+from chansu.core.generation import apply_transformation, generate_at_position
+from chansu.core.loaders import load_compound, load_transformation, to_mol
+from chansu.core.models import Transformation
+from chansu.core.properties import compute_properties, tanimoto_similarity
 
-ENGINE_DIR = Path(__file__).resolve().parents[1] / "derisk"
+ENGINE_DIR = Path(__file__).resolve().parents[1] / "chansu"
 
 # Compound-specific chemistry that must never appear in engine code (PROJECT.md §5).
 FORBIDDEN_TOKENS = [
@@ -118,7 +118,7 @@ def test_generation_spike_produces_valid_structure():
 
 
 def test_unlocatable_position_falls_back_to_describe_not_break():
-    from derisk.core.models import ModifiablePosition, StructureLocator
+    from chansu.core.models import ModifiablePosition, StructureLocator
 
     compound = load_compound("bufalin")
     mol = to_mol(compound)

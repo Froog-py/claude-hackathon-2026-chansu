@@ -25,7 +25,7 @@ from .models import (
     Transformation,
 )
 
-# Repo layout: derisk/core/loaders.py -> parents[2] == repo root -> data/
+# Repo layout: chansu/core/loaders.py -> parents[2] == repo root -> data/
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
