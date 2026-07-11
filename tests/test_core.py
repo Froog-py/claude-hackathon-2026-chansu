@@ -255,3 +255,30 @@ def test_blank_override_reason_is_rejected():
         with pytest.raises(ValueError):
             flag.override(blank)
     assert not flag.overridden
+
+
+def test_strategy_library_loads_and_requires_a_citation(tmp_path):
+    """Every strategy is precedent-backed: the loader must reject an uncited entry, and the
+    shipped soft-drug entry must carry a real precedent + citation (PROJECT.md §6, §7)."""
+    import json
+
+    import pytest
+
+    from chansu.core.loaders import load_strategies, load_strategy, strategy_from_dict
+
+    strat = load_strategy("soft_drug_self_inactivation")
+    assert strat.precedent_drug == "Fluticasone propionate"
+    assert strat.citation and strat.citation.label and strat.citation.source
+    assert "systemic_toxicity" in strat.liability_classes
+
+    # the whole library loads (compound-agnostic: keyed on liability class + attachment type)
+    library = load_strategies()
+    assert any(s.id == "soft_drug_self_inactivation" for s in library)
+    for s in library:
+        assert s.citation and s.citation.label, f"strategy {s.id} is missing a citation"
+
+    # an uncited strategy must not be constructible
+    with pytest.raises(ValueError):
+        strategy_from_dict(
+            {"id": "x", "concept": "c", "mechanism": "m", "precedent_drug": "d", "citation": None}
+        )

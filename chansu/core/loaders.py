@@ -20,6 +20,7 @@ from .models import (
     ImportanceRegion,
     Liability,
     ModifiablePosition,
+    Strategy,
     StructureLocator,
     Target,
     Transformation,
@@ -134,6 +135,40 @@ def load_transformation(transformation_id: str, override: Optional[Path] = None)
     if not path.exists():
         raise FileNotFoundError(f"No transformation data file: {path}")
     return transformation_from_dict(json.loads(path.read_text()))
+
+
+def strategy_from_dict(d: dict) -> Strategy:
+    # A strategy without a real precedent citation does not exist (PROJECT.md §6). Enforce it
+    # here so no uncited strategy can ever enter the library.
+    citation = _citation(d.get("citation"))
+    if citation is None or not citation.label:
+        raise ValueError(
+            f"Strategy {d.get('id')!r} has no citation — every strategy must cite a real precedent."
+        )
+    return Strategy(
+        id=d["id"],
+        concept=d["concept"],
+        mechanism=d["mechanism"],
+        precedent_drug=d["precedent_drug"],
+        citation=citation,
+        liability_classes=d.get("liability_classes", []),
+        attachment_types=d.get("attachment_types", []),
+    )
+
+
+def load_strategy(strategy_id: str, override: Optional[Path] = None) -> Strategy:
+    path = data_dir(override) / "strategies" / f"{strategy_id}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"No strategy data file: {path}")
+    return strategy_from_dict(json.loads(path.read_text()))
+
+
+def load_strategies(override: Optional[Path] = None) -> list[Strategy]:
+    """Load the whole precedent-backed strategy library (all data/strategies/*.json)."""
+    directory = data_dir(override) / "strategies"
+    if not directory.is_dir():
+        return []
+    return [strategy_from_dict(json.loads(p.read_text())) for p in sorted(directory.glob("*.json"))]
 
 
 def load_config(override: Optional[Path] = None) -> dict:
