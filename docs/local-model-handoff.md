@@ -121,6 +121,37 @@ Rule of thumb (4-bit quantized, leave headroom for context): ~8 GB VRAM → 7–
 13–14B; ~24 GB → 32B; more → larger. When unsure, size down — a smaller model that runs is
 worth more than a big one that thrashes.
 
+### Known hardware for this deployment
+
+This machine is a **CyberPowerPC** desktop:
+
+| Component | Spec | Implication |
+|---|---|---|
+| GPU | **NVIDIA RTX 5060 Ti, 16 GB** (Blackwell) | ~16 GB VRAM → target a **14B-class** instruct model at Q4/Q5 comfortably (fits with 32k+ context); a 24B at Q4 fits tightly; a 32B (~18–20 GB at Q4) needs CPU offload and will be slow. Favor a strong 14–24B reasoning model with tool calling. |
+| CPU | Intel Core Ultra 7 265F (no iGPU) | Fine; all inference runs on the GPU. |
+| RAM | 32 GB DDR5 | Enough headroom for CPU offload if you push a larger model. |
+| Disk | 2 TB PCIe 4 SSD | Plenty for weights (a 14–24B Q4 model is ~9–15 GB). |
+
+**Blackwell is new (2025):** install a **current NVIDIA driver** and a **recent** build of your
+runtime — older Ollama/llama.cpp/LM Studio builds predate Blackwell (sm_120) support and won't
+see the GPU. Confirm the GPU is visible with `nvidia-smi` before downloading a model.
+
+### First-time setup (this PC has not been used for coding)
+
+A minimal on-ramp — the agent can take it from here:
+
+1. **NVIDIA driver** — install the latest Game Ready/Studio driver; verify `nvidia-smi` lists the
+   RTX 5060 Ti.
+2. **Git for Windows** — `winget install Git.Git`.
+3. **Python 3.12 + uv** — `winget install Python.Python.3.12` and `winget install astral-sh.uv`.
+   This mirrors the main repo's setup (uv + Python 3.12); on Windows the venv python is
+   `.venv\Scripts\python.exe` (the Mac uses `.venv/bin/python`).
+4. **Model runtime** — easiest first-timer path with an NVIDIA GPU is **LM Studio** (GUI,
+   auto-detects the GPU, one-click model download, and a built-in OpenAI-compatible server) or
+   **Ollama** (`winget install Ollama.Ollama`, then `ollama serve`). Either exposes the
+   `/v1/chat/completions` endpoint the adapter expects (§5).
+5. Then implement `LocalReasoningModel` (§2) and run the smoke test (§6).
+
 ---
 
 ## 5. How to serve it locally + endpoint shape
