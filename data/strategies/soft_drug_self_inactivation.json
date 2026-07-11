@@ -1,0 +1,13 @@
+{
+  "id": "soft_drug_self_inactivation",
+  "concept": "Cap the compound's activity with a metabolically labile self-inactivating group (a cleavable ester/thioester positioned so it is cleaved once the drug leaves the target site), so local activity is preserved while systemic exposure is rapidly detoxified.",
+  "mechanism": "Blood and hepatic esterases / CYP3A rapidly cleave the labile group to an inactive carboxylic-acid metabolite (the 'soft drug' / antedrug principle), collapsing systemic activity while sparing the local effect.",
+  "precedent_drug": "Fluticasone propionate",
+  "citation": {
+    "label": "Remien K, Patel P, Bowman A. Fluticasone. StatPearls [Internet]. StatPearls Publishing; 2024.",
+    "source": "https://www.ncbi.nlm.nih.gov/books/NBK542161/",
+    "note": "Fluticasone propionate is metabolized to its inactive 17-beta-carboxylic acid, limiting systemic glucocorticoid exposure."
+  },
+  "liability_classes": ["systemic_toxicity", "narrow_therapeutic_window"],
+  "attachment_types": ["hydroxyl", "cleavable_ester", "thioester"]
+}
