@@ -11,7 +11,8 @@
   },
   "annotations": {
     "class": "bufadienolide (cardiotonic steroid)",
-    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with real, NCBI-verified citations (PROJECT.md §6, §7)."
+    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with real, NCBI-verified citations (PROJECT.md §6, §7).",
+    "validation_note": "Validation (PROJECT.md §12): the soft-drug / antedrug avenue reproduces the by-hand 'Bufalone' design's core reasoning - mask activity with a metabolically cleavable group (precedent: fluticasone). The by-hand design places that group on the C17 bufadienolide lactone (the warhead); the tool independently flags editing that essential region as high-importance (Katz 2010 / Laursen 2015), which the chemist overrides as the intended tuning of the warhead."
   },
   "modifiable_positions": [
     {
