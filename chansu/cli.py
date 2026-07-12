@@ -1,23 +1,21 @@
-"""Minimal Day-1 entry point (PROJECT.md §11's real UI comes later).
+"""Entry point / demo (PROJECT.md §11's real Streamlit UI is Day 5).
 
     python -m chansu.cli [compound_id]
 
-Loads a compound *from data*, prints its provenance-tagged computed properties, and
-generates one validated analog. The engine is compound-agnostic — everything specific to
-the demo compound comes from ``data/`` (default compound id lives in ``data/config.json``).
+Loads a compound *from data* and prints the full provenance-tagged design memo: grounded
+targets / liabilities / importance map, gated and scored candidate analogs, and honest
+failure where nothing applies. The engine is compound-agnostic — everything specific to the
+demo compound comes from ``data/`` (default compound id lives in ``data/config.json``).
 """
 
 from __future__ import annotations
 
 import sys
 
-from rdkit import Chem
-
-from .core.generation import generate_at_position
-from .core.loaders import load_compound, load_config, load_strategies, load_transformation, to_mol
+from .core.loaders import load_compound, load_config, load_strategies, to_mol
 from .core.models import Compound, Provenance, tag
-from .core.properties import PropertyProfile, compute_properties, tanimoto_similarity
-from .report import render_grounding
+from .core.properties import PropertyProfile, compute_properties
+from .report import render_memo
 
 _COMPUTED = tag(Provenance.COMPUTED)
 
@@ -46,47 +44,10 @@ def _print_properties(profile: PropertyProfile) -> None:
 
 def run(compound: Compound) -> None:
     mol = to_mol(compound)
-
-    # Day-3 grounding: identity + cited targets, liabilities, importance map, and the
-    # liability -> precedent-strategy matches (honest failure where nothing applies).
-    print(render_grounding(compound, load_strategies()))
-
-    _print_header("Computed properties (parent)")
-    profile = compute_properties(mol)
-    _print_properties(profile)
-
-    _print_header("Generation spike — one encoded transformation at one position")
-    if not compound.modifiable_positions:
-        print("  No modifiable positions defined in data; nothing to generate.")
-        return
-
-    position = compound.modifiable_positions[0]
-    # Day-1 default transformation lives in data; the engine does not name it.
-    transformation_id = load_config().get("demo_transformation")
-    if not transformation_id:
-        print("  No demo_transformation configured in data/config.json; skipping generation.")
-        return
-    transformation = load_transformation(transformation_id)
-    print(f"  Transformation : {transformation.name}   [{transformation.id}]")
-    print(f"  Position       : {position.label}   [{position.id}]")
-
-    analogs = generate_at_position(compound, mol, transformation, position)
-    for analog in analogs:
-        if analog.describe_only:
-            print(f"\n  [describe-only fallback] {analog.description}")
-            continue
-        analog_mol = Chem.MolFromSmiles(analog.product_smiles)
-        analog.properties = compute_properties(analog_mol).as_dict()
-        analog.similarity_to_parent = round(tanimoto_similarity(mol, analog_mol), 3)
-
-        print(f"\n  Analog: {analog.product_smiles}")
-        print(f"    valid            : {analog.valid}   {tag(analog.provenance)}")
-        print(f"    modified atom    : {analog.modified_atom_idx}")
-        print(f"    formula / MW     : {analog.properties['formula']}  /  {analog.properties['mw']} g/mol   [computed]")
-        print(f"    similarity-parent: {analog.similarity_to_parent} (Tanimoto, ECFP4)   [computed]")
-        if analog.flags:
-            for flag in analog.flags:
-                print(f"    flag [{flag.level.value}]: {flag.message}")
+    # The full design memo: grounding + gated, scored candidate analogs + honest failure.
+    print(render_memo(compound, mol, load_strategies()))
+    _print_header("Parent computed properties")
+    _print_properties(compute_properties(mol))
 
 
 def main(argv: list[str] | None = None) -> int:
