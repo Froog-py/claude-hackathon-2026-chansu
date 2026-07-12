@@ -1,0 +1,14 @@
+{
+  "id": "tumor_activated_prodrug_hypoxia",
+  "concept": "Attach a bioreductive trigger (e.g. a 2-nitroimidazole) to a cytotoxic warhead; the trigger is reduced and fragments only in low-oxygen tissue, releasing the toxin there.",
+  "mechanism": "Under tumor hypoxia, one-electron reductases reduce the 2-nitroimidazole; the radical fragments to release the cytotoxin (a bromo-isophosphoramide mustard). In normoxia the radical is back-oxidized, making release hypoxia-selective.",
+  "precedent_drug": "Evofosfamide (TH-302)",
+  "citation": {
+    "label": "Sun JD, Liu Q, Wang J, et al. Selective tumor hypoxia targeting by hypoxia-activated prodrug TH-302 inhibits tumor growth in preclinical models of cancer. Clin Cancer Res. 2012;18(3):758-70.",
+    "source": "PMID 22184053 | DOI 10.1158/1078-0432.CCR-11-1980",
+    "note": "Author/year verified via NCBI as Sun JD, 2012 (the Claude Science draft mislabeled it 'Duan 2011')."
+  },
+  "liability_classes": ["systemic_toxicity"],
+  "attachment_types": ["cleavable_linker", "bioreductive_trigger"],
+  "transformation_id": null
+}

@@ -118,6 +118,9 @@ class Strategy:
     citation: Citation
     liability_classes: list[str] = field(default_factory=list)
     attachment_types: list[str] = field(default_factory=list)
+    # Encoded transformation that realizes this strategy; None -> describe-and-highlight only
+    # (for strategies whose chemistry — glycosylation, conjugation — is too complex to auto-emit).
+    transformation_id: Optional[str] = None
 
 
 @dataclass

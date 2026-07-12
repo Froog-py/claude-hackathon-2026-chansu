@@ -1,0 +1,14 @@
+{
+  "id": "tumor_activated_prodrug_enzyme",
+  "concept": "Mask the active cytotoxin as a carbamate/glycosyl prodrug that requires stepwise enzymatic conversion, where the final activating enzyme is over-expressed in tumor tissue.",
+  "mechanism": "A tumor-over-expressed enzyme (e.g. thymidine phosphorylase) catalyzes the final activation step preferentially in tumor tissue, sparing normal cells.",
+  "precedent_drug": "Capecitabine",
+  "citation": {
+    "label": "Shimma N, Umeda I, Arasaki M, et al. The design and synthesis of a new tumor-selective fluoropyrimidine carbamate, capecitabine. Bioorg Med Chem. 2000;8(7):1697-706.",
+    "source": "PMID 10976516 | DOI 10.1016/S0968-0896(00)00087-0",
+    "note": "First author verified as Shimma N via NCBI (the Claude Science draft mislabeled it 'Miwa')."
+  },
+  "liability_classes": ["systemic_toxicity", "off_target_exposure"],
+  "attachment_types": ["amine", "hydroxyl", "cleavable_carbamate"],
+  "transformation_id": null
+}

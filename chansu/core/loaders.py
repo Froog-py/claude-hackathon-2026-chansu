@@ -153,6 +153,7 @@ def strategy_from_dict(d: dict) -> Strategy:
         citation=citation,
         liability_classes=d.get("liability_classes", []),
         attachment_types=d.get("attachment_types", []),
+        transformation_id=d.get("transformation_id"),
     )
 
 

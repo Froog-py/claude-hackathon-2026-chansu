@@ -257,28 +257,60 @@ def test_blank_override_reason_is_rejected():
     assert not flag.overridden
 
 
-def test_strategy_library_loads_and_requires_a_citation(tmp_path):
-    """Every strategy is precedent-backed: the loader must reject an uncited entry, and the
-    shipped soft-drug entry must carry a real precedent + citation (PROJECT.md §6, §7)."""
-    import json
+def test_strategy_library_loads_all_entries_with_verified_citations():
+    """The precedent-backed library: every entry has a precedent + citation, is keyed on
+    liability class + attachment type (compound-agnostic), and any declared transformation
+    actually resolves (PROJECT.md §6, §7)."""
+    from chansu.core.loaders import load_strategies, load_transformation
 
+    library = load_strategies()
+    ids = {s.id for s in library}
+    assert {
+        "soft_drug_self_inactivation",
+        "glycosylation_isoform_selectivity",
+        "tumor_activated_prodrug_enzyme",
+        "tumor_activated_prodrug_hypoxia",
+        "targeting_ligand_conjugation",
+        "ester_prodrug_pk_masking",
+    } <= ids
+
+    for s in library:
+        assert s.precedent_drug, f"{s.id} has no precedent drug"
+        assert s.citation and s.citation.label and s.citation.source, f"{s.id} missing a citation"
+        assert s.liability_classes and s.attachment_types, f"{s.id} not keyed on class + type"
+        if s.transformation_id:  # a declared transformation must actually exist
+            assert load_transformation(s.transformation_id).id == s.transformation_id
+
+
+def test_uncited_strategy_is_rejected():
     import pytest
 
-    from chansu.core.loaders import load_strategies, load_strategy, strategy_from_dict
+    from chansu.core.loaders import strategy_from_dict
 
-    strat = load_strategy("soft_drug_self_inactivation")
-    assert strat.precedent_drug == "Fluticasone propionate"
-    assert strat.citation and strat.citation.label and strat.citation.source
-    assert "systemic_toxicity" in strat.liability_classes
-
-    # the whole library loads (compound-agnostic: keyed on liability class + attachment type)
-    library = load_strategies()
-    assert any(s.id == "soft_drug_self_inactivation" for s in library)
-    for s in library:
-        assert s.citation and s.citation.label, f"strategy {s.id} is missing a citation"
-
-    # an uncited strategy must not be constructible
     with pytest.raises(ValueError):
         strategy_from_dict(
             {"id": "x", "concept": "c", "mechanism": "m", "precedent_drug": "d", "citation": None}
         )
+
+
+def test_ester_prodrug_transformation_fires_on_acid_not_on_bufalin():
+    """The ester-prodrug strategy's encoded transformation makes a valid ester on a carboxyl
+    compound, and honestly declines on bufalin (no carboxyl) -> describe-and-highlight."""
+    from chansu.core.generation import apply_transformation, generate_at_position
+    from chansu.core.loaders import load_transformation
+    from chansu.core.models import ModifiablePosition, StructureLocator
+
+    t = load_transformation("carboxyl_to_ethyl_ester")
+
+    acid = Chem.MolFromSmiles("CC(C)Cc1ccc(C(C)C(=O)O)cc1")  # ibuprofen (has -COOH)
+    valid = [a for a in apply_transformation(acid, t) if a.valid and a.product_smiles]
+    assert valid, "ester-prodrug transformation did not fire on a carboxylic acid"
+    assert rdMolDescriptors.CalcMolFormula(Chem.MolFromSmiles(valid[0].product_smiles)) == "C15H22O2"
+
+    compound = load_compound("bufalin")
+    mol = to_mol(compound)
+    cooh = ModifiablePosition(
+        id="cooh", label="carboxyl", locator=StructureLocator(smarts="[CX3](=O)[OX2H1]")
+    )
+    analogs = generate_at_position(compound, mol, t, cooh)
+    assert len(analogs) == 1 and analogs[0].describe_only and not analogs[0].valid
