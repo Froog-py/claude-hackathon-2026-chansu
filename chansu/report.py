@@ -3,10 +3,17 @@
 Two renderers over the same underlying data, both provenance-tagged:
   * ``render_grounding`` — the Day-3 view: cited targets, liabilities, importance map, and
     liability -> strategy matches.
-  * ``render_memo`` — the Day-4 must-ship: the full design memo, adding ranked, gated, scored
-    candidates and honest-failure / validation framing.
+  * ``render_memo`` — the Day-4 must-ship: the full design memo over an already-computed, possibly
+    *reviewed* ``DesignResult`` (ranked, gated, scored candidates).
 
-Pure text; the Streamlit UI (Day 5) renders the same data.
+Rendering is deliberately separate from orchestration: ``design`` (pipeline.py) runs the loop and
+returns a result the caller can review — overriding a candidate's gate flag with a recorded reason —
+and ``render_memo`` renders exactly that result, so the override survives into the output (the other
+half of the two-way gate, PROJECT.md §6). ``design_and_render`` is the one-call convenience for the
+CLI. Pure text; the Streamlit UI (Day 5) renders the same data.
+
+A scientific claim is tagged ``[literature — cited]`` only when it carries a real citation source;
+otherwise it is rendered honestly as uncited — the renderer never prints a cited tag it can't back.
 """
 
 from __future__ import annotations
@@ -14,23 +21,35 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from .core.matching import StrategyMatch, match_strategies
-from .core.models import Compound, Provenance, Strategy, tag
-from .core.pipeline import Candidate, design
+from .core.models import Compound, Flag, Provenance, Strategy, tag
+from .core.pipeline import Candidate, DesignResult, design
 from .core.properties import compute_properties
 from .core.scoring import DEFAULT_WEIGHTS
 
 _LIT = tag(Provenance.LITERATURE)
 _HYP = tag(Provenance.HYPOTHESIS)
-_OOS = tag(Provenance.OUT_OF_SCOPE)
 _COMPUTED = tag(Provenance.COMPUTED)
+
+# Bounded honest failure: the tool only knows the *supplied* library had no match — it says exactly
+# that and invents no out-of-scope route (Codex P2; PROJECT.md §6).
+_HONEST_FAILURE = (
+    "    -> no strategy in the current curated library matches this liability; "
+    "the tool declines to over-claim."
+)
 
 
 def _header(title: str) -> list[str]:
     return ["", title, "=" * len(title)]
 
 
-def _cite(obj) -> str:
-    return obj.citation.source if getattr(obj, "citation", None) else "(uncited)"
+def _lit(obj) -> str:
+    """Provenance for a scientific claim: ``[literature — cited]`` with the source only when a real
+    citation source is present; otherwise rendered honestly as uncited. The renderer never emits a
+    cited tag it cannot back (Codex P1)."""
+    c = getattr(obj, "citation", None)
+    if c is not None and c.source:
+        return f"{_LIT}  {c.source}"
+    return "[uncited — not literature-backed]"
 
 
 def _identity_lines(compound: Compound) -> list[str]:
@@ -49,7 +68,7 @@ def _identity_lines(compound: Compound) -> list[str]:
 def _targets_lines(compound: Compound) -> list[str]:
     lines = ["Targets"]
     for t in compound.targets:
-        lines.append(f"  - {t.name}   {_LIT}  {_cite(t)}")
+        lines.append(f"  - {t.name}   {_lit(t)}")
         lines.append(f"      {t.role}")
     return lines or ["Targets", "  (none curated)"]
 
@@ -57,7 +76,7 @@ def _targets_lines(compound: Compound) -> list[str]:
 def _liabilities_lines(compound: Compound) -> list[str]:
     lines = ["Liabilities"]
     for lib in compound.liabilities:
-        lines.append(f"  - {lib.kind}   {_LIT}  {_cite(lib)}")
+        lines.append(f"  - {lib.kind}   {_lit(lib)}")
         lines.append(f"      {lib.detail}")
     return lines
 
@@ -65,7 +84,7 @@ def _liabilities_lines(compound: Compound) -> list[str]:
 def _importance_lines(compound: Compound) -> list[str]:
     lines = ["Importance map (graded, advisory)"]
     for r in compound.importance_map:
-        lines.append(f"  - [{r.importance.upper():6s}] {r.locator.label or r.id}   {_LIT}  {_cite(r)}")
+        lines.append(f"  - [{r.importance.upper():6s}] {r.locator.label or r.id}   {_lit(r)}")
         lines.append(f"      {r.reason}")
     return lines
 
@@ -78,14 +97,11 @@ def _matched_strategies_lines(compound: Compound, library: list[Strategy]) -> li
     for kind, group in by_liability.items():
         lines.append(f"\n  Liability: {kind}")
         if len(group) == 1 and group[0].strategy is None:
-            lines.append(
-                f"    -> no well-precedented strategy applies; flag for review / may route to "
-                f"formulation-delivery {_OOS}. The tool declines to over-claim."
-            )
+            lines.append(_HONEST_FAILURE)
             continue
         for m in group:
             s = m.strategy
-            lines.append(f"    -> {s.id}  (precedent: {s.precedent_drug})   {_LIT}  {_cite(s)}")
+            lines.append(f"    -> {s.id}  (precedent: {s.precedent_drug})   {_lit(s)}")
             if m.actionable:
                 where = ", ".join(p.label for p in m.actionable_positions)
                 how = (
@@ -118,9 +134,24 @@ def _delta(value: float, parent: float) -> str:
     return f"{value} ({'+' if d >= 0 else ''}{d} vs parent)"
 
 
+def _flag_lines(flags: list[Flag], indent: str) -> list[str]:
+    """Render every flag, its current override state, and (when the flag restates a literature
+    claim) its citation tag — so the two-way gate is visible and provenance-honest (Codex P1)."""
+    lines: list[str] = []
+    for f in flags:
+        cite = f"   {_LIT}  {f.citation.source}" if getattr(f, "citation", None) and f.citation.source else ""
+        lines.append(f"{indent}FLAG [{f.level.value}]: {f.message}{cite}")
+        if f.overridden:
+            lines.append(f"{indent}    -> OVERRIDDEN by chemist. Reason recorded: {f.override_reason}")
+        elif f.overridable:
+            lines.append(f"{indent}    -> overridable; the chemist decides and the reason is recorded.")
+    return lines
+
+
 def _candidate_lines(candidate: Candidate, parent_profile, index: int) -> list[str]:
     s = candidate.strategy
-    lines = [f"    [{index}] {s.id}  (precedent: {s.precedent_drug})   {_LIT}  {_cite(s)}"]
+    at = f" at {candidate.position_label}" if candidate.position_label else ""
+    lines = [f"    [{index}] {s.id}{at}  (precedent: {s.precedent_drug})   {_lit(s)}"]
     lines.append(f"        analog: {candidate.analog.product_smiles}   {_HYP}")
     sc = candidate.score
     lines.append(
@@ -134,21 +165,30 @@ def _candidate_lines(candidate: Candidate, parent_profile, index: int) -> list[s
         f"  logP {_delta(p['logp'], parent_profile.logp)}"
         f"  TPSA {_delta(p['tpsa'], parent_profile.tpsa)}   {_COMPUTED}"
     )
-    for f in candidate.flags:
-        lines.append(
-            f"        FLAG [{f.level.value}]: {f.message}"
-            " — overridable; the chemist decides and the reason is recorded."
-        )
+    lines += _flag_lines(candidate.flags, "        ")
     return lines
 
 
-def render_memo(compound: Compound, mol: Mol, library: list[Strategy]) -> str:
-    result = design(compound, mol, library)
+def _described_lines(candidate: Candidate) -> list[str]:
+    """A describe-and-highlight candidate: its position, its described edit, and every flag —
+    including a high-importance gate flag if the described site is essential (Codex P1)."""
+    s = candidate.strategy
+    at = f" at {candidate.position_label}" if candidate.position_label else " (no compatible attachment point)"
+    lines = [f"    [describe] {s.id}{at}  (precedent: {s.precedent_drug})   {_lit(s)}"]
+    lines.append(f"        {candidate.analog.description}   {_HYP}")
+    lines += _flag_lines(candidate.flags, "        ")
+    return lines
+
+
+def render_memo(compound: Compound, mol: Mol, result: DesignResult) -> str:
+    """Render an already-computed ``DesignResult`` (see ``design``). Any gate override the caller
+    recorded on the result is rendered here — orchestration and rendering are separate so the
+    override survives to the output (PROJECT.md §6)."""
     parent = compute_properties(mol)
 
     lines = _header(f"DESIGN MEMO — {compound.name}  ({compound.id})")
-    lines.append("  Every claim is provenance-tagged. Candidates are hypotheses for wet-lab")
-    lines.append("  validation, never predictions presented as fact (PROJECT.md §6).")
+    lines.append("  Every pipeline claim is provenance-tagged; candidates are hypotheses for")
+    lines.append("  wet-lab validation, never predictions presented as fact (PROJECT.md §6).")
     lines += [""] + _identity_lines(compound)
 
     lines += _header("Grounding")
@@ -170,12 +210,9 @@ def render_memo(compound: Compound, mol: Mol, library: list[Strategy]) -> str:
     unaddressed = {lib.kind for lib in result.unaddressed}
 
     for lib in compound.liabilities:
-        lines.append(f"\n  Liability: {lib.kind}   {_LIT}  {_cite(lib)}")
+        lines.append(f"\n  Liability: {lib.kind}   {_lit(lib)}")
         if lib.kind in unaddressed:
-            lines.append(
-                f"    -> no well-precedented strategy applies; flag for review / may route to "
-                f"formulation-delivery {_OOS}. The tool declines to over-claim."
-            )
+            lines.append(_HONEST_FAILURE)
             continue
         group = by_liability.get(lib.kind, [])
         valid = sorted(
@@ -187,21 +224,24 @@ def render_memo(compound: Compound, mol: Mol, library: list[Strategy]) -> str:
         for i, candidate in enumerate(valid, 1):
             lines += _candidate_lines(candidate, parent, i)
         for candidate in described:
-            lines.append(
-                f"    [describe] {candidate.strategy.id}  "
-                f"(precedent: {candidate.strategy.precedent_drug})   {_LIT}  {_cite(candidate.strategy)}"
-            )
-            lines.append(f"        {candidate.strategy.concept}   {_HYP}")
-            lines.append(f"        (not auto-generated — {candidate.analog.error})")
+            lines += _described_lines(candidate)
 
     lines += _header("Validation & honest limits")
     lines.append("  Candidates are grounded hypotheses; the tool never predicts binding, toxicity, or efficacy,")
     lines.append("  and every candidate needs wet-lab validation. High-importance edits are flagged, not blocked —")
     lines.append("  the tool surfaces the risk and the chemist overrides with a recorded reason (PROJECT.md §6).")
-    # A compound may carry its own validation narrative in data (never hard-coded here).
+    # A compound may carry an author's validation narrative in data. It is labeled as such and NOT
+    # presented as pipeline-verified — free-form prose is never laundered into a checked claim.
     note = compound.annotations.get("validation_note")
     if note:
         lines.append("")
+        lines.append("  Author's validation narrative (data-provided; NOT verified against this run):")
         for paragraph in note.split("\n"):
-            lines.append(f"  {paragraph}")
+            lines.append(f"    {paragraph}")
     return "\n".join(lines)
+
+
+def design_and_render(compound: Compound, mol: Mol, library: list[Strategy], data_dir=None) -> str:
+    """Convenience: run the loop and render it in one call (the CLI path). To render a *reviewed*
+    gate — override a flag before rendering — call ``design`` then ``render_memo`` on the result."""
+    return render_memo(compound, mol, design(compound, mol, library, data_dir=data_dir))

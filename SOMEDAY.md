@@ -52,22 +52,32 @@ New idea mid-sprint? Write it here and keep building the plan. Scope creep is th
 
 Real findings whose *timing* is Day 3+ or a deliberate design call — not fixed now, tracked here.
 
-- **Adapter tool-result turn + typed messages (Day 3, before the Claude adapter).** `Message` is
-  `(role, str)` and can't represent an assistant tool call, a tool result, or a `tool_call_id`.
-  Redesign to a typed content/message model (user text; assistant text + tool calls; tool result
-  with `tool_call_id`, name, content, error flag) before wiring a real backend. Add a two-turn
-  tool-conformance test (request → result → final text); the handoff §6 tool smoke test should
-  actually send a result back.
+- **Adapter tool-result turn + typed messages (deferred; adapter shipped receive-only).** `Message`
+  is `(role, str)` and can't represent an assistant tool call, a tool result, or a `tool_call_id`,
+  so the Claude adapter is **receive-only**: it surfaces a returned `tool_use` but can't feed a
+  result back for a final answer. This is honestly marked in `Message` / `ClaudeReasoningModel`
+  docstrings (Codex Day-4 P1). The Day-4 must-ship loop never calls Claude, so this is off the
+  critical path. To build: a typed content/message model (user text; assistant text + tool calls;
+  tool result with `tool_call_id`, name, content, error flag) + a two-turn conformance test
+  (request → two parallel results → final text); the handoff §6 tool smoke test should send a
+  result back.
+- **Capability-aware adapter vs. Opus-only (deferred design call, Codex Day-4 P2).**
+  `ClaudeReasoningModel` accepts any model string but always sends Opus-4.8 thinking/effort shape
+  and never forwards `temperature`. Either enforce Opus explicitly or make the request mapping
+  model-capability-aware when a second Claude model is actually targeted. Fine as-is while Opus 4.8
+  is the sole backend.
 - **Typed streaming events (Day 3).** Replace `stream() -> Iterator[str]` with typed events
   (`TextDelta` / `ToolCallDelta` / `Completed(ReasoningResponse)`) so tool calls / stop_reason /
   usage are recoverable. v1 docstring now honestly says text-only.
 - **Importance region as a set of atoms (Day 3–4).** An `ImportanceRegion` SMARTS may span many
   atoms, but the gate compares one resolved atom to one `modified_atom_idx`. Resolve a region to
   its full atom set, have generation report all changed parent atoms, and gate on set overlap.
-- **Attachment-type compatibility enforcement (Day 2/3, in the matching layer).** Positions and
-  transformations both declare attachment types, but `generate_at_position` doesn't compare them.
-  Decide semantics (nonempty intersection? empty = wildcard?) and enforce with a flagged
-  describe-only result on mismatch.
+- **Position/transform compatibility at generation time (partly done).** *Strategy↔transformation*
+  consistency is now enforced at library load (`_check_transformation_compat`: a declared
+  `applies_to_attachment_types` must overlap the strategy's; empty = wildcard) — Codex Day-4 P2.
+  Still deferred: an explicit *position↔transform* attachment check inside `generate_at_position`.
+  Safe to defer because the reaction SMARTS self-limits (a transform that can't match a site
+  produces no product → describe-and-highlight fallback), so no wrong structure is emitted.
 - **Fuller attribution / change-set (Day 2/3, with transformation hardening).** No-op products are
   now rejected; still want to confirm the declared reacting site actually participated (not just
   "product differs from parent"), and require attribution on the untargeted path.

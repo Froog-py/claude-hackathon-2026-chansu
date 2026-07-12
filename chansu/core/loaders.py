@@ -96,6 +96,15 @@ def compound_from_dict(d: dict) -> Compound:
         Liability(kind=l["kind"], detail=l.get("detail"), citation=_citation(l.get("citation")))
         for l in d.get("liabilities", [])
     ]
+    # ``kind`` is the grouping key for matching and the memo; duplicates would silently merge two
+    # distinct liabilities' candidates. Require it unique per compound (Codex P3).
+    kinds = [lib.kind for lib in liabilities]
+    if len(kinds) != len(set(kinds)):
+        dupes = sorted({k for k in kinds if kinds.count(k) > 1})
+        raise ValueError(
+            f"Compound {d.get('id')!r} has duplicate liability kind(s) {dupes}; "
+            f"kind is the grouping key and must be unique."
+        )
     return Compound(
         id=d["id"],
         name=d["name"],
@@ -157,11 +166,27 @@ def strategy_from_dict(d: dict) -> Strategy:
     )
 
 
+def _check_transformation_compat(strategy: Strategy, override: Optional[Path]) -> Strategy:
+    """A strategy that declares an encoded transformation must be attachment-compatible with it,
+    or matching would call it actionable and generate at a site the transformation can't touch
+    (Codex P2). Empty ``applies_to_attachment_types`` means unconstrained; a declared set must
+    overlap the strategy's attachment types."""
+    if strategy.transformation_id:
+        applies = set(load_transformation(strategy.transformation_id, override).applies_to_attachment_types)
+        if applies and not (applies & set(strategy.attachment_types)):
+            raise ValueError(
+                f"Strategy {strategy.id!r} attaches at {sorted(set(strategy.attachment_types))} but its "
+                f"transformation {strategy.transformation_id!r} only applies to {sorted(applies)} — "
+                f"inconsistent library data."
+            )
+    return strategy
+
+
 def load_strategy(strategy_id: str, override: Optional[Path] = None) -> Strategy:
     path = data_dir(override) / "strategies" / f"{strategy_id}.json"
     if not path.exists():
         raise FileNotFoundError(f"No strategy data file: {path}")
-    return strategy_from_dict(json.loads(path.read_text()))
+    return _check_transformation_compat(strategy_from_dict(json.loads(path.read_text())), override)
 
 
 def load_strategies(override: Optional[Path] = None) -> list[Strategy]:
@@ -169,7 +194,10 @@ def load_strategies(override: Optional[Path] = None) -> list[Strategy]:
     directory = data_dir(override) / "strategies"
     if not directory.is_dir():
         return []
-    return [strategy_from_dict(json.loads(p.read_text())) for p in sorted(directory.glob("*.json"))]
+    return [
+        _check_transformation_compat(strategy_from_dict(json.loads(p.read_text())), override)
+        for p in sorted(directory.glob("*.json"))
+    ]
 
 
 def load_config(override: Optional[Path] = None) -> dict:

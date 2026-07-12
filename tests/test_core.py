@@ -352,5 +352,66 @@ def test_grounding_report_is_cited_and_declines_to_overclaim():
     text = render_grounding(load_compound("bufalin"), load_strategies())
     assert "[literature — cited]" in text
     assert "PMID 20388710" in text  # Katz 2010 (NCBI-verified) is surfaced
-    assert "no well-precedented strategy applies" in text  # honest failure (rapid_clearance)
+    assert "no strategy in the current curated library" in text  # bounded honest failure
+    assert "formulation-delivery" not in text  # invents no out-of-scope route
     assert "no site fabricated" in text  # attachment-point honesty
+
+
+def test_uncited_claim_is_never_tagged_as_literature_cited():
+    """A programmatic compound with uncited roles must render as uncited, never a false
+    [literature — cited] (Codex P1: the renderer never emits a cited tag it can't back)."""
+    from chansu.core.models import Compound, Liability, Target
+    from chansu.report import render_grounding
+
+    compound = Compound(
+        id="x",
+        name="X",
+        smiles="CCO",
+        targets=[Target(name="SomeTarget", role="role")],
+        liabilities=[Liability(kind="poor_solubility", detail="detail")],
+    )
+    text = render_grounding(compound, [])
+    assert "[uncited — not literature-backed]" in text
+    assert "[literature — cited]" not in text  # nothing here is cited, so nothing claims it
+
+
+def test_duplicate_liability_kind_is_rejected_at_load():
+    """kind is the grouping key for candidates; duplicates would silently merge two liabilities
+    (Codex P3)."""
+    import pytest
+
+    from chansu.core.loaders import compound_from_dict
+
+    with pytest.raises(ValueError):
+        compound_from_dict(
+            {
+                "id": "dup",
+                "name": "Dup",
+                "structure": {"smiles": "CCO"},
+                "liabilities": [
+                    {"kind": "poor_solubility", "detail": "a"},
+                    {"kind": "poor_solubility", "detail": "b"},
+                ],
+            }
+        )
+
+
+def test_strategy_transform_attachment_mismatch_is_rejected_at_load():
+    """A strategy declaring a transformation it is attachment-incompatible with is inconsistent
+    library data — reject it before matching can call it actionable (Codex P2)."""
+    import pytest
+
+    from chansu.core.loaders import _check_transformation_compat
+    from chansu.core.models import Citation, Strategy
+
+    bad = Strategy(
+        id="x",
+        concept="c",
+        mechanism="m",
+        precedent_drug="d",
+        citation=Citation(label="l", source="s"),
+        attachment_types=["amine"],           # o_acetylation applies only to hydroxyls
+        transformation_id="o_acetylation",
+    )
+    with pytest.raises(ValueError):
+        _check_transformation_compat(bad, None)

@@ -96,7 +96,8 @@ def _describe_fallback(
             f"Structure not auto-generated ({reason})." + highlight
         ),
         provenance=Provenance.HYPOTHESIS,
-        flags=[Flag(code="describe_only", level=FlagLevel.WARNING, message=reason)],
+        # describe_only is a status (why no structure was emitted), not a gate to override.
+        flags=[Flag(code="describe_only", level=FlagLevel.WARNING, message=reason, overridable=False)],
         error=reason,
     )
 
@@ -187,6 +188,8 @@ def importance_gate_flags(compound: Compound, mol: Mol, atom_idx: Optional[int])
                     level=FlagLevel.WARNING,
                     message=f"Edits a high-importance region: {region.reason}",
                     overridable=True,
+                    region_id=region.id,
+                    citation=region.citation,   # keep the literature source with the claim
                 )
             )
     return flags
