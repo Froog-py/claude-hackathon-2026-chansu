@@ -108,3 +108,101 @@ class EchoReasoningModel(BaseReasoningModel):
         return ReasoningResponse(
             text=f"[echo] {last}", stop_reason="end_turn", usage=Usage(0, 0)
         )
+
+
+class ClaudeReasoningModel(BaseReasoningModel):
+    """The production reasoning backend — Claude (Opus), behind the same interface any other
+    backend implements (this is what the local-model handoff mirrors).
+
+    Runtime notes baked in from the Anthropic API:
+      * Default model ``claude-opus-4-8`` (PROJECT.md: "Claude (Opus)").
+      * Adaptive thinking + high effort for multi-step scientific reasoning.
+      * Opus 4.8 rejects sampling params (``temperature``/``top_p``/``budget_tokens``) with a
+        400 — so ``ReasoningRequest.temperature`` is intentionally NOT forwarded.
+      * Credentials resolve from the environment at call time (``ANTHROPIC_API_KEY`` or an
+        ``ant`` profile). This class never reads or holds a key itself.
+      * A ``stop_reason == "refusal"`` is a valid 200 outcome, surfaced honestly (empty text +
+        ``stop_reason="refusal"``) rather than faked into a completed answer (PROJECT.md §6).
+
+    ``anthropic`` is an optional dependency, imported lazily; inject ``client`` to unit-test the
+    request/response mapping without the SDK or a live call.
+    """
+
+    def __init__(
+        self,
+        model: str = "claude-opus-4-8",
+        default_max_tokens: int = 4096,
+        effort: str = "high",
+        client: Any = None,
+    ) -> None:
+        self.model = model
+        self.default_max_tokens = default_max_tokens
+        self.effort = effort
+        self._client = client
+
+    def _get_client(self) -> Any:
+        if self._client is None:
+            try:
+                import anthropic
+            except ImportError as exc:  # optional dependency
+                raise ReasoningError(
+                    "the 'anthropic' package is required for ClaudeReasoningModel "
+                    "(pip install anthropic)"
+                ) from exc
+            self._client = anthropic.Anthropic()  # resolves credentials from the environment
+        return self._client
+
+    def complete(self, request: ReasoningRequest) -> ReasoningResponse:
+        client = self._get_client()
+        params: dict = {
+            "model": self.model,
+            "max_tokens": request.max_tokens or self.default_max_tokens,
+            "system": request.system,
+            "messages": [{"role": m.role, "content": m.content} for m in request.messages],
+            "thinking": {"type": "adaptive"},
+            "output_config": {"effort": self.effort},
+        }
+        if request.tools:
+            params["tools"] = [
+                {"name": t.name, "description": t.description, "input_schema": t.input_schema}
+                for t in request.tools
+            ]
+        if request.stop_sequences:
+            params["stop_sequences"] = request.stop_sequences
+        # NOTE: request.temperature is deliberately not forwarded — Opus 4.8 rejects it (400).
+
+        try:
+            resp = client.messages.create(**params)
+        except Exception as exc:  # normalize any SDK/transport failure to the interface's error
+            raise ReasoningError(f"Claude request failed: {exc}") from exc
+
+        return self._to_response(resp)
+
+    @staticmethod
+    def _to_response(resp: Any) -> ReasoningResponse:
+        text_parts: list[str] = []
+        tool_calls: list[ToolCall] = []
+        for block in getattr(resp, "content", []) or []:
+            btype = getattr(block, "type", None)
+            if btype == "text":
+                text_parts.append(block.text)
+            elif btype == "tool_use":
+                tool_calls.append(ToolCall(id=block.id, name=block.name, arguments=dict(block.input)))
+
+        usage = None
+        raw_usage = getattr(resp, "usage", None)
+        if raw_usage is not None:
+            usage = Usage(
+                input_tokens=getattr(raw_usage, "input_tokens", None),
+                output_tokens=getattr(raw_usage, "output_tokens", None),
+            )
+        stop_reason = getattr(resp, "stop_reason", None) or "end_turn"
+        # Refusal is honest failure — return it tagged, never dress an empty/partial reply up
+        # as a complete answer. Callers must check stop_reason before trusting the text.
+        return ReasoningResponse(
+            text="".join(text_parts),
+            tool_calls=tool_calls,
+            stop_reason=stop_reason,
+            usage=usage,
+            raw=resp,
+        )
