@@ -6,8 +6,9 @@ Not part of the production Claude path.
 
 Security posture for this deployment: by default the client only talks to
 loopback hosts and refuses HTTP redirects (so a local peer cannot bounce
-prompt payloads off-machine). Set ``CHANSU_LOCAL_ALLOW_REMOTE=1`` to opt out
-of the loopback allowlist for intentional non-local endpoints.
+prompt payloads off-machine). ``http``/``https`` is always required.
+Set ``CHANSU_LOCAL_ALLOW_REMOTE=1`` to opt out of the loopback host allowlist
+for intentional non-local HTTP endpoints.
 """
 
 from __future__ import annotations
@@ -38,10 +39,13 @@ def _env_truthy(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _require_loopback_url(url: str) -> None:
+def _validate_base_url(url: str, *, require_loopback: bool) -> None:
+    """Reject non-HTTP(S) schemes always; optionally require a loopback host."""
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
         raise ReasoningError(f"Local model base_url must be http(s); got {parsed.scheme!r}")
+    if not require_loopback:
+        return
     host = (parsed.hostname or "").lower()
     if host not in _LOOPBACK_HOSTS:
         raise ReasoningError(
@@ -116,8 +120,7 @@ class LocalReasoningModel(BaseReasoningModel):
         if allow_remote is None:
             allow_remote = _env_truthy("CHANSU_LOCAL_ALLOW_REMOTE")
         self.allow_remote = allow_remote
-        if not self.allow_remote:
-            _require_loopback_url(self.base_url)
+        _validate_base_url(self.base_url, require_loopback=not self.allow_remote)
         self._opener = urllib.request.build_opener(_NoRedirectHandler)
 
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
@@ -157,8 +160,7 @@ class LocalReasoningModel(BaseReasoningModel):
         return payload
 
     def _post_json(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:
-        if not self.allow_remote:
-            _require_loopback_url(url)
+        _validate_base_url(url, require_loopback=not self.allow_remote)
 
         body = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(

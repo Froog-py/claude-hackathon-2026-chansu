@@ -4,7 +4,7 @@ Stretch-goal backend for Chansu on the CyberPowerPC Windows box. Production Clau
 
 ## Hardware (verified)
 
-```
+```text
 NVIDIA GeForce RTX 5060 Ti, 16311 MiB, 591.86, 12.0
 ```
 
@@ -34,10 +34,10 @@ GPU visible via `nvidia-smi` before any model weights were downloaded.
 | Name | Required | Default | Meaning |
 |---|---|---|---|
 | `CHANSU_LOCAL_MODEL` | yes (or ctor `model=`) | _(none)_ | Served model id, e.g. `qwen2.5:14b-instruct` |
-| `CHANSU_LOCAL_BASE_URL` | no | `http://127.0.0.1:11434/v1` | OpenAI-compatible API root (no trailing slash required) |
-| `CHANSU_LOCAL_ALLOW_REMOTE` | no | unset/false | If `1`/`true`/`yes`/`on`, skip loopback host allowlist |
+| `CHANSU_LOCAL_BASE_URL` | no | `http://127.0.0.1:11434/v1` | OpenAI-compatible API root (no trailing slash required); must be `http`/`https` |
+| `CHANSU_LOCAL_ALLOW_REMOTE` | no | unset/false | If `1`/`true`/`yes`/`on`, skip **loopback host** allowlist only (`http`/`https` still required) |
 | ctor `timeout_s` | no | `120.0` | HTTP timeout seconds |
-| ctor `allow_remote` | no | from env | Explicit override of loopback policy |
+| ctor `allow_remote` | no | from env | Explicit override of loopback host policy (scheme check always enforced) |
 
 ## Module surface (wiring facts)
 
@@ -87,6 +87,7 @@ Normalization:
 
 | Condition | Exception |
 |---|---|
+| Non-`http`/`https` scheme (always) | `ReasoningError` |
 | Non-loopback host without allow_remote | `ReasoningError` |
 | HTTP redirect (any) | `ReasoningError` (redirects disabled) |
 | Connection refused / DNS / transport | `ReasoningError` |
@@ -104,24 +105,25 @@ No partial text is returned on failure.
 
 ## Security controls in the client
 
-1. **Loopback allowlist** by default: host must be `127.0.0.1`, `localhost`, or `::1`.
-2. **Redirects refused** — a local peer cannot 307/308 POST bodies off-machine.
-3. **Response size capped** at 16 MiB.
-4. **No API keys** in repo or adapter; Ollama local server needs none.
-5. Stretch module is optional and isolated from Claude path / `adapter.py`.
+1. **HTTP(S) only** — `file://` and other schemes rejected even when remote is allowed.
+2. **Loopback allowlist** by default: host must be `127.0.0.1`, `localhost`, or `::1`.
+3. **Redirects refused** — a local peer cannot 307/308 POST bodies off-machine.
+4. **Response size capped** at 16 MiB.
+5. **No API keys** in repo or adapter; Ollama local server needs none.
+6. Stretch module is optional and isolated from Claude path / `adapter.py`.
 
 ## Smoke results (this machine)
 
 ### §6A — Interface conformance (no model)
 
-```
+```console
 interface OK
 ```
 
 ### §6B — Real backend (`qwen2.5:14b-instruct`)
 
-```
-reasoning OK: Capping a hydroxyl group as an ester typically decreases solubility in water due to the reduced hydrogen bonding capacit
+```console
+reasoning OK: Capping a hydroxyl group as an ester typically decreases solubility in water due to the reduced hydrogen bonding capacit...
 tool path OK: end_turn []
 error path OK: ReasoningError Local model connection failed: [WinError 10061] No connection could be made because the target machine actively refused
 ```
@@ -155,5 +157,3 @@ Pass criteria: non-empty reasoning text; tool path `tool_use` **or** clean `end_
 | Git 2.55.0 | Installed |
 | Ollama 0.31.2 | Installed; model pulled |
 | Repo | git clone on branch `local-model-adapter` |
-
-Workspace path on this machine: `C:\Users\lukek\Projects\claude-hackathon-2026-chansu\_fresh`
