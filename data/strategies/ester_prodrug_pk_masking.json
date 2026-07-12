@@ -1,0 +1,14 @@
+{
+  "id": "ester_prodrug_pk_masking",
+  "concept": "Mask a polar/charged carboxylate as a neutral, lipophilic ester (e.g. an ethyl ester) to improve oral absorption and permeability; systemic esterases regenerate the active acid.",
+  "mechanism": "Hepatic and plasma carboxylesterases hydrolyze the ester back to the active carboxylate; the ester form provides the oral bioavailability the polar acid lacks.",
+  "precedent_drug": "Oseltamivir (ethyl ester of the active carboxylate). Second precedent: enalapril (ester prodrug of enalaprilat).",
+  "citation": {
+    "label": "Davies BE. Pharmacokinetics of oseltamivir: an oral antiviral for the treatment and prophylaxis of influenza in diverse populations. J Antimicrob Chemother. 2010;65 Suppl 2:ii5-ii10.",
+    "source": "PMID 20215135 | DOI 10.1093/jac/dkq015",
+    "note": "Second precedent: MacFadyen RJ et al., enalapril clinical pharmacokinetics, Clin Pharmacokinet. 1993;25(4):274-82, PMID 8261712 | DOI 10.2165/00003088-199325040-00003."
+  },
+  "liability_classes": ["poor_oral_bioavailability", "poor_solubility", "low_permeability"],
+  "attachment_types": ["carboxyl"],
+  "transformation_id": "carboxyl_to_ethyl_ester"
+}

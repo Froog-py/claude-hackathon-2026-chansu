@@ -1,0 +1,14 @@
+{
+  "id": "glycosylation_isoform_selectivity",
+  "concept": "Attach or modify a sugar (glycoside) at a peripheral position to tune selectivity between closely related target isoforms, without altering the core pharmacophore.",
+  "mechanism": "The sugar moiety modulates binding kinetics and affinity across target isoforms (e.g. Na+/K+-ATPase alpha-1 vs alpha-2/alpha-3), shifting selectivity; the aglycone core keeps its intrinsic activity.",
+  "precedent_drug": "Digitalis glycosides (e.g. digitoxin) versus their aglycones",
+  "citation": {
+    "label": "Katz A, Lifshitz Y, Bab-Dinitz E, Kapri-Pardes E, Goldshleger R, Tal DM, Karlish SJD. Selectivity of digitalis glycosides for isoforms of human Na,K-ATPase. J Biol Chem. 2010;285(25):19582-92.",
+    "source": "PMID 20388710 | DOI 10.1074/jbc.M110.119248",
+    "note": "The sugar group governs isoform selectivity; the aglycone is largely non-selective. Also in the flagship research log."
+  },
+  "liability_classes": ["poor_selectivity", "off_target_toxicity"],
+  "attachment_types": ["hydroxyl", "glycosylation_site"],
+  "transformation_id": null
+}

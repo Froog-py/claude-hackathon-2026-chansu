@@ -9,5 +9,6 @@
     "note": "Fluticasone propionate is metabolized to its inactive 17-beta-carboxylic acid, limiting systemic glucocorticoid exposure."
   },
   "liability_classes": ["systemic_toxicity", "narrow_therapeutic_window"],
-  "attachment_types": ["hydroxyl", "cleavable_ester", "thioester"]
+  "attachment_types": ["hydroxyl", "cleavable_ester", "thioester"],
+  "transformation_id": "o_acetylation"
 }

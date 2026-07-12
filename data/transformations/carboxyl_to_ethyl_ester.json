@@ -1,0 +1,8 @@
+{
+  "id": "carboxyl_to_ethyl_ester",
+  "name": "Carboxylic acid -> ethyl ester (esterase-labile PK-masking handle)",
+  "reaction_smarts": "[CX3:1](=O)[OX2H1]>>[CX3:1](=O)OCC",
+  "reacting_atom_mapnum": 1,
+  "applies_to_attachment_types": ["carboxyl"],
+  "description": "Esterifies a free carboxylic acid to its ethyl ester (the encoded transformation for the ester-prodrug PK-masking strategy). Fires only on compounds that have a free -COOH; on a compound with no carboxyl it produces nothing and the engine reports the strategy's attachment point as absent."
+}

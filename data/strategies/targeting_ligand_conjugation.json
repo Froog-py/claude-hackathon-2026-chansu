@@ -1,0 +1,14 @@
+{
+  "id": "targeting_ligand_conjugation",
+  "concept": "Localize a cytotoxic payload to target cells by covalently attaching a targeting ligand (a small molecule such as folate, or an antibody) through a cleavable linker; the payload is released after receptor-mediated uptake.",
+  "mechanism": "Folate-receptor-alpha (over-expressed on many tumors) binds the folate-conjugated payload and mediates internalization; the cleavable spacer then releases the cytotoxin inside the target cell. Antibody variant: an anti-antigen antibody delivers the payload via a protease-cleavable peptide linker.",
+  "precedent_drug": "Vintafolide (EC145; folate-vinca conjugate). Antibody-conjugate variant: brentuximab vedotin.",
+  "citation": {
+    "label": "Ambrosio AJ, Suzin D, Palmer JL, et al. Vintafolide (EC145) for the treatment of folate-receptor-alpha positive platinum-resistant ovarian cancer. Expert Rev Clin Pharmacol. 2014;7(4):443-50.",
+    "source": "PMID 24742319 | DOI 10.1586/17512433.2014.909723",
+    "note": "Antibody-conjugate variant: Francisco JA et al., Blood. 2003;102(4):1458-65 (brentuximab vedotin / cAC10-vcMMAE), PMID 12714494 | DOI 10.1182/blood-2003-01-0039."
+  },
+  "liability_classes": ["off_target_exposure", "poor_selectivity", "systemic_toxicity"],
+  "attachment_types": ["hydroxyl", "amine", "cleavable_linker"],
+  "transformation_id": null
+}
