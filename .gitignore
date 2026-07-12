@@ -16,3 +16,15 @@ venv/
 
 # OS
 .DS_Store
+
+# Unpublished / curated research materials — kept LOCAL (this repo is public).
+# The compound data files carry the public-literature citations (PMIDs/DOIs); the raw
+# research log and the unpublished paper draft stay off the public repo. Folder structure
+# is preserved via the .gitkeep placeholders.
+reference-material/research-log/*
+!reference-material/research-log/.gitkeep
+reference-material/distilled-records/*
+!reference-material/distilled-records/.gitkeep
+reference-material/papers/*
+!reference-material/papers/.gitkeep
+reference-material/*.docx
