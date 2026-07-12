@@ -11,7 +11,7 @@
   },
   "annotations": {
     "class": "bufadienolide (cardiotonic steroid)",
-    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with REAL citations on Day 3 and are left empty here so nothing is presented as cited before a citation exists (PROJECT.md §6, §7)."
+    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with real, NCBI-verified citations (PROJECT.md §6, §7)."
   },
   "modifiable_positions": [
     {
@@ -29,7 +29,66 @@
       "rationale": "Tertiary alcohol on the steroid core; a secondary handle option."
     }
   ],
-  "importance_map": [],
-  "targets": [],
-  "liabilities": []
+  "importance_map": [
+    {
+      "id": "c14_hydroxyl",
+      "locator": {"smarts": "[C;H0;X4][OX2H1]", "target_atom": 1, "label": "C14-OH oxygen"},
+      "importance": "high",
+      "reason": "The C14 beta-hydroxyl is essential for Na+/K+-ATPase binding (hydrogen-bonds within the pocket, e.g. Thr797); altering it strongly reduces inhibition.",
+      "citation": {"label": "Katz A, et al. Selectivity of digitalis glycosides for isoforms of human Na,K-ATPase. J Biol Chem. 2010;285(25):19582-92.", "source": "PMID 20388710 | DOI 10.1074/jbc.M110.119248"}
+    },
+    {
+      "id": "c17_bufadienolide_lactone",
+      "locator": {"smarts": "O=c1cccco1", "target_atom": 1, "label": "alpha-pyranone (bufadienolide) carbonyl carbon"},
+      "importance": "high",
+      "reason": "The C17 six-membered alpha-pyranone lactone is the activity warhead: its carbonyl hydrogen-bonds within the pocket and the ring fills the hydrophobic funnel (Leu125/Ala323/Ile800). Modifying it is the intended-but-risky move in the by-hand soft-drug design.",
+      "citation": {"label": "Laursen M, et al. Structures and characterization of digoxin- and bufalin-bound Na+,K+-ATPase compared with the ouabain-bound complex. Proc Natl Acad Sci USA. 2015;112(6):1755-60.", "source": "PMID 25624492 | DOI 10.1073/pnas.1422997112"}
+    },
+    {
+      "id": "c3_hydroxyl",
+      "locator": {"smarts": "[CH1][OX2H1]", "target_atom": 1, "label": "C3-OH oxygen"},
+      "importance": "medium",
+      "reason": "The C3 hydroxyl / sugar position is not essential for inhibition but strongly tunes binding affinity and isoform selectivity (the glycosylation handle) - a preferred site to modify without destroying activity.",
+      "citation": {"label": "Katz A, et al. Selectivity of digitalis glycosides for isoforms of human Na,K-ATPase. J Biol Chem. 2010;285(25):19582-92.", "source": "PMID 20388710 | DOI 10.1074/jbc.M110.119248"}
+    }
+  ],
+  "targets": [
+    {
+      "name": "Na+/K+-ATPase (alpha-1 / alpha-2 / alpha-3 isoforms)",
+      "role": "Primary molecular target; the cardiac-glycoside binding site. Bufalin binds all three isoforms with similar affinity.",
+      "citation": {"label": "Laursen M, et al. Proc Natl Acad Sci USA. 2015;112(6):1755-60.", "source": "PMID 25624492 | DOI 10.1073/pnas.1422997112"}
+    },
+    {
+      "name": "ABCB1 (P-glycoprotein)",
+      "role": "Bufalin reverses ABCB1-mediated multidrug resistance (e.g. to docetaxel).",
+      "citation": {"label": "Zhang D, et al. Bufalin reverses ABCB1-mediated resistance to docetaxel in breast cancer. Heliyon. 2023;9(3):e13840.", "source": "PMID 36879978 | DOI 10.1016/j.heliyon.2023.e13840"}
+    },
+    {
+      "name": "Apoptosis / mitochondrial pathways (Annexin A2, DRP1)",
+      "role": "Bufalin induces mitochondrial dysfunction and apoptosis beyond ATPase inhibition.",
+      "citation": {"label": "Li Y, et al. Bufalin induces mitochondrial dysfunction and promotes apoptosis of glioma cells by regulating Annexin A2 and DRP1. Cancer Cell Int. 2021;21(1):424.", "source": "PMID 34376212 | DOI 10.1186/s12935-021-02137-x"}
+    }
+  ],
+  "liabilities": [
+    {
+      "kind": "systemic_toxicity",
+      "detail": "Cardiotoxicity and a narrow therapeutic window from on-target Na+/K+-ATPase inhibition in cardiac tissue - the primary barrier to systemic use.",
+      "citation": {"label": "Botelho AFM, et al. A review of cardiac glycosides: structure, toxicokinetics, clinical signs, diagnosis and antineoplastic potential. Toxicon. 2019;158:63-68.", "source": "PMID 30529380 | DOI 10.1016/j.toxicon.2018.11.429"}
+    },
+    {
+      "kind": "poor_solubility",
+      "detail": "Poor water solubility from the lipophilic steroid scaffold, limiting formulation and delivery.",
+      "citation": {"label": "Cheng CS, et al. New therapeutic aspects of steroidal cardiac glycosides: the anticancer properties of Huachansu and Bufalin. Cancer Cell Int. 2019;19:92.", "source": "PMID 31011289 | DOI 10.1186/s12935-019-0806-1"}
+    },
+    {
+      "kind": "rapid_clearance",
+      "detail": "Rapid CYP3A4-mediated metabolism gives a very short half-life and poor systemic exposure.",
+      "citation": {"label": "Soumoy L, et al. Bufalin for an innovative therapeutic approach against cancer. Pharmacol Res. 2022;184:106442.", "source": "PMID 36096424 | DOI 10.1016/j.phrs.2022.106442"}
+    },
+    {
+      "kind": "poor_selectivity",
+      "detail": "Little intrinsic selectivity among Na+/K+-ATPase isoforms (binds alpha-1/2/3 similarly); the C3 sugar governs isoform selectivity.",
+      "citation": {"label": "Katz A, et al. Selectivity of digitalis glycosides for isoforms of human Na,K-ATPase. J Biol Chem. 2010;285(25):19582-92.", "source": "PMID 20388710 | DOI 10.1074/jbc.M110.119248"}
+    }
+  ]
 }

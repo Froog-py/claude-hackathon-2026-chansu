@@ -314,3 +314,43 @@ def test_ester_prodrug_transformation_fires_on_acid_not_on_bufalin():
     )
     analogs = generate_at_position(compound, mol, t, cooh)
     assert len(analogs) == 1 and analogs[0].describe_only and not analogs[0].valid
+
+
+def test_match_strategies_grounds_and_declines_honestly():
+    """Liabilities match precedent strategies by class; matches are actionable only where the
+    attachment point exists; a liability with no strategy is honest failure (PROJECT.md §6)."""
+    from chansu.core.loaders import load_compound, load_strategies
+    from chansu.core.matching import match_strategies
+
+    compound = load_compound("bufalin")
+    matches = match_strategies(compound, load_strategies())
+
+    for m in matches:  # every matched strategy is precedent-backed (cited)
+        if m.strategy is not None:
+            assert m.strategy.citation and m.strategy.citation.source
+
+    by_liab: dict = {}
+    for m in matches:
+        by_liab.setdefault(m.liability.kind, []).append(m)
+
+    # systemic toxicity -> soft-drug, actionable (bufalin has hydroxyl handles + a transformation)
+    soft = [m for m in by_liab["systemic_toxicity"] if m.strategy and m.strategy.id == "soft_drug_self_inactivation"]
+    assert soft and soft[0].actionable and soft[0].strategy.transformation_id
+
+    # poor solubility -> ester-prodrug matched by class but NOT actionable (bufalin has no -COOH)
+    ester = [m for m in by_liab["poor_solubility"] if m.strategy and m.strategy.id == "ester_prodrug_pk_masking"]
+    assert ester and not ester[0].actionable
+
+    # rapid clearance -> no precedented strategy at all (the tool declines, does not invent one)
+    assert any(m.strategy is None for m in by_liab["rapid_clearance"])
+
+
+def test_grounding_report_is_cited_and_declines_to_overclaim():
+    from chansu.core.loaders import load_compound, load_strategies
+    from chansu.report import render_grounding
+
+    text = render_grounding(load_compound("bufalin"), load_strategies())
+    assert "[literature — cited]" in text
+    assert "PMID 20388710" in text  # Katz 2010 (NCBI-verified) is surfaced
+    assert "no well-precedented strategy applies" in text  # honest failure (rapid_clearance)
+    assert "no site fabricated" in text  # attachment-point honesty
