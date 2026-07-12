@@ -16,6 +16,7 @@ from chansu.reasoning.adapter import (
     ReasoningError,
     ReasoningModel,
     ReasoningRequest,
+    ReasoningTimeout,
     ToolSpec,
 )
 
@@ -91,6 +92,60 @@ def test_claude_adapter_normalizes_api_failure_to_reasoning_error():
         ClaudeReasoningModel(client=_fake_client(boom)).complete(
             ReasoningRequest(system="", messages=[Message("user", "x")])
         )
+
+
+def test_claude_adapter_maps_timeout_to_reasoning_timeout():
+    """A request timeout must surface as ReasoningTimeout, not a generic ReasoningError — matched
+    by type name so the optional SDK need not be installed to classify it (Codex P1)."""
+
+    class APITimeoutError(Exception):  # mirrors anthropic.APITimeoutError by name
+        pass
+
+    def boom(**kwargs):
+        raise APITimeoutError("deadline exceeded")
+
+    with pytest.raises(ReasoningTimeout):
+        ClaudeReasoningModel(client=_fake_client(boom)).complete(
+            ReasoningRequest(system="", messages=[Message("user", "x")])
+        )
+
+
+def test_claude_adapter_rejects_malformed_response_instead_of_faking_success():
+    """A response missing stop_reason/content is malformed — it must raise, never be promoted to
+    an empty end_turn 'success' (Codex P1)."""
+    with pytest.raises(ReasoningError):
+        ClaudeReasoningModel(client=_fake_client(lambda **k: types.SimpleNamespace())).complete(
+            ReasoningRequest(system="", messages=[Message("user", "x")])
+        )
+
+
+def test_claude_adapter_normalizes_malformed_tool_block_to_reasoning_error():
+    """A tool_use block with undecodable input must raise ReasoningError, not a raw TypeError leak
+    to the caller (Codex P1)."""
+    resp = types.SimpleNamespace(
+        content=[types.SimpleNamespace(type="tool_use", id="t", name="n", input=None)],
+        stop_reason="tool_use",
+        usage=None,
+    )
+    with pytest.raises(ReasoningError):
+        ClaudeReasoningModel(client=_fake_client(lambda **k: resp)).complete(
+            ReasoningRequest(system="", messages=[Message("user", "x")])
+        )
+
+
+def test_claude_adapter_uses_default_max_tokens_when_request_unset():
+    """max_tokens=None must resolve to the backend default (Codex P2: the old ``or`` made the
+    constructor default unreachable)."""
+    captured: dict = {}
+
+    def create(**kwargs):
+        captured.update(kwargs)
+        return types.SimpleNamespace(content=[], stop_reason="end_turn", usage=None)
+
+    ClaudeReasoningModel(client=_fake_client(create), default_max_tokens=2048).complete(
+        ReasoningRequest(system="", messages=[Message("user", "x")])  # max_tokens left as None
+    )
+    assert captured["max_tokens"] == 2048
 
 
 def test_claude_adapter_reports_missing_sdk_clearly():

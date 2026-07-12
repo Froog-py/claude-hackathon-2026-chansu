@@ -40,10 +40,31 @@ Repo: `github.com/Froog-py/claude-hackathon-2026-chansu` (public). Local folder 
   of similarity/ease/druglikeness, weights shown) → ranked, provenance-tagged design memo.
 - `python -m chansu.cli` → the complete tagged memo. 25 tests green.
 
+## Day 4 review — Codex second pass (fixed)
+Triaged all 12 findings against the actual code; fixed 11 with regression tests (25 → 35 tests),
+deferred 1 with an honest in-code marker. Key trust-boundary fixes:
+- **Two-way gate now round-trips:** `design` (orchestrate) split from `render_memo(…, result)` —
+  a chemist's flag override + recorded reason survives into the memo (was silently discarded).
+- **Describe-and-highlight made honest:** one described candidate *per* actionable position (was
+  collapsed to one positionless one), each run through the same importance gate, and the memo now
+  renders position + description + every flag (an essential-site described edit is now flagged).
+- **Provenance enforced structurally:** `[literature — cited]` is emitted only with a real source;
+  gate flags carry the region's citation; the author's validation note is labeled data-provided,
+  not pipeline-verified.
+- **Transparent score reproduces:** total computed from the rounded components shown; weights
+  validated (exact keys, finite, in [0,1], sum 1).
+- **Bounded honest failure:** "no strategy in the current curated library" — no invented
+  formulation route (also a §5 generic-engine leak removed, with the hard-coded "complex
+  conjugation" reason and the fake strategy-as-transformation id).
+- **Adapter hardened:** malformed response / decode error → `ReasoningError`, timeout →
+  `ReasoningTimeout`, `max_tokens` resolution fixed; tool support honestly marked receive-only.
+- **Loaders:** strategy↔transformation attachment consistency + unique liability `kind` enforced.
+Deferred (honest, tracked in SOMEDAY): full Claude tool-call/tool-result loop (adapter is
+receive-only; the Day-4 loop never calls Claude), generation-time position/transform check (SMARTS
+self-limits), capability-aware adapter (Opus-only by design). Review file: `CODEX_DAY4_DESIGN_LOOP_REVIEW.md`.
+
 ## Current cursor (resume here)
-- **Pending:** triage + fix the second Codex review — `CODEX_DAY4_DESIGN_LOOP_REVIEW.md` (on disk).
-  Discipline: verify each finding against the actual code before changing anything; the review was
-  scoped to matching/scoring/pipeline/adapter/memo, chemistry & citations out of scope.
+- **Pending:** commit the Day-4 review fixes (awaiting Luke's OK) — 12 files, +494/-98, 35 tests green.
 - **Next:** Day 5 — Streamlit multi-screen UI (RDKit rendering + substructure highlighting) and
   demo hardening across 2–3 liabilities; lock the validation narrative (reproduce the by-hand
   soft-drug design; the warhead-edit flag is the two-way-gate moment). Then Day 6 = submit.

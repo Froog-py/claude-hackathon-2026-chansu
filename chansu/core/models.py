@@ -174,6 +174,10 @@ class FlagLevel(str, Enum):
 class Flag:
     """One half of the two-way gate (PROJECT.md §6): the tool surfaces a concern but never
     silently blocks or silently allows. A flag is overridable; the override is recorded.
+
+    When a flag restates a literature-derived claim (e.g. a high-importance region), it carries
+    the source region's id and Citation so the claim can be rendered provenance-tagged rather
+    than as untagged free-form text.
     """
 
     code: str
@@ -182,6 +186,8 @@ class Flag:
     overridable: bool = True
     overridden: bool = False
     override_reason: Optional[str] = None
+    region_id: Optional[str] = None
+    citation: Optional[Citation] = None
 
     def override(self, reason: str) -> None:
         """Record a human override (PROJECT.md §6). A real, non-empty reason is required —
@@ -202,7 +208,7 @@ class Analog:
     """
 
     parent_id: str
-    transformation_id: str
+    transformation_id: Optional[str]   # None when the candidate is a describe-only proposal
     product_smiles: Optional[str]
     valid: bool
     modified_atom_idx: Optional[int] = None

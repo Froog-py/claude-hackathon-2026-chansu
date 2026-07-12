@@ -15,7 +15,7 @@ import sys
 from .core.loaders import load_compound, load_config, load_strategies, to_mol
 from .core.models import Compound, Provenance, tag
 from .core.properties import PropertyProfile, compute_properties
-from .report import render_memo
+from .report import design_and_render
 
 _COMPUTED = tag(Provenance.COMPUTED)
 
@@ -45,7 +45,7 @@ def _print_properties(profile: PropertyProfile) -> None:
 def run(compound: Compound) -> None:
     mol = to_mol(compound)
     # The full design memo: grounding + gated, scored candidate analogs + honest failure.
-    print(render_memo(compound, mol, load_strategies()))
+    print(design_and_render(compound, mol, load_strategies()))
     _print_header("Parent computed properties")
     _print_properties(compute_properties(mol))
 
