@@ -14,9 +14,10 @@ import sys
 from rdkit import Chem
 
 from .core.generation import generate_at_position
-from .core.loaders import load_compound, load_config, load_transformation, to_mol
+from .core.loaders import load_compound, load_config, load_strategies, load_transformation, to_mol
 from .core.models import Compound, Provenance, tag
 from .core.properties import PropertyProfile, compute_properties, tanimoto_similarity
+from .report import render_grounding
 
 _COMPUTED = tag(Provenance.COMPUTED)
 
@@ -46,18 +47,11 @@ def _print_properties(profile: PropertyProfile) -> None:
 def run(compound: Compound) -> None:
     mol = to_mol(compound)
 
-    _print_header(f"Compound: {compound.name}  ({compound.id})")
-    src_parts = [p for p in (compound.source, compound.source_id) if p]
-    src = " ".join(src_parts) if src_parts else "(unsourced)"
-    # A database record (e.g. a PubChem CID) is verifiable provenance for the structure, but
-    # it is not a literature citation — do not tag it [literature — cited] (PROJECT.md §6).
-    print(f"  Structure source : {src}   (database record)")
-    print(f"  InChIKey         : {compound.inchikey or '(n/a)'}")
-    print(f"  Canonical SMILES : {compound.smiles}")
-    if compound.annotations.get("class"):
-        print(f"  Class (annotation): {compound.annotations['class']}")
+    # Day-3 grounding: identity + cited targets, liabilities, importance map, and the
+    # liability -> precedent-strategy matches (honest failure where nothing applies).
+    print(render_grounding(compound, load_strategies()))
 
-    _print_header("Computed properties")
+    _print_header("Computed properties (parent)")
     profile = compute_properties(mol)
     _print_properties(profile)
 
