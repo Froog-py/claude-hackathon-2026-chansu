@@ -12,6 +12,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# The Claude reasoning backend (chansu.reasoning.adapter.ClaudeReasoningModel). Optional and
+# imported lazily so the core runs without it.
+claude = ["anthropic>=0.40"]
 
 [project.scripts]
 chansu = "chansu.cli:main"
