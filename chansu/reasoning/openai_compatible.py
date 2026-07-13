@@ -27,12 +27,16 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
     request/response mapping without the SDK or a live call.
     """
 
+    # A reasoning-appropriate output ceiling. Unlike Claude — whose hidden "thinking" tokens count
+    # against max_tokens, so it needs a large budget — OpenAI and local models emit only visible
+    # tokens. A modest ceiling is sufficient for a rationale/synthesis and is the right way to call a
+    # local model (a 16k num_predict is wasteful and can strain a small local context).
     def __init__(
         self,
         model: str,
         base_url: str,
         api_key_env: Optional[str] = None,
-        default_max_tokens: int = 4096,
+        default_max_tokens: int = 2048,
         client: Any = None,
     ) -> None:
         self.model = model
@@ -64,7 +68,13 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
 
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
         client = self._get_client()
-        max_tokens = request.max_tokens if request.max_tokens is not None else self.default_max_tokens
+        # Cap the request to a sensible visible-token budget (see default_max_tokens): a Claude-sized
+        # 16k budget is wasteful here and, for a local server, kinder to keep modest.
+        max_tokens = (
+            min(request.max_tokens, self.default_max_tokens)
+            if request.max_tokens is not None
+            else self.default_max_tokens
+        )
         messages = [{"role": "system", "content": request.system}] if request.system else []
         messages += [{"role": m.role, "content": m.content} for m in request.messages]
         params: dict = {

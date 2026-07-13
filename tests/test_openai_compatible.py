@@ -81,6 +81,13 @@ def test_name_is_the_model_id():
     assert _model(_Resp()).name == "m"
 
 
+def test_large_max_tokens_is_capped_for_non_thinking_models():
+    # Claude's 16k thinking budget is wasteful here; the adapter caps to its sensible default.
+    spy = {}
+    _model(_Resp(), spy).complete(ReasoningRequest(system="s", messages=[Message("user", "u")], max_tokens=16000))
+    assert spy["max_tokens"] == 2048
+
+
 def test_missing_key_raises_reasoning_error():
     m = OpenAICompatibleReasoningModel(model="m", base_url="http://x/v1", api_key_env="DEFINITELY_UNSET_XYZ")
     with pytest.raises(ReasoningError):
