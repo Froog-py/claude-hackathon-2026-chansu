@@ -28,11 +28,11 @@ is the load-bearing wall, no matter the source.**
 
 ## The pipeline at a glance
 
-```
+```text
 [Prompt builder]        pure Python — emits a copy-paste prompt + one-time project setup
       |  (chemist runs it in Claude Science, external, authoritative extraction)
       v
-[Paste / upload]        the record comes back as JSON or markdown
+[Paste / upload]        the record comes back as JSON
       |
       v
 [Ingest gate]           pure Python — RDKit structure + locator resolution + vocabulary lint
@@ -77,7 +77,7 @@ gate lints against it and **warns, never errors**.
 A new pure-Python module (top level, beside `references.py` / `report.py`: framework-agnostic,
 unit-testable, reusable by the UI and a future MCP surface). One entry point:
 
-```
+```python
 validate_record(record: dict, strategies: list) -> IngestReport
 ```
 
@@ -157,10 +157,10 @@ Pasted once into a Claude Science project's settings. **Draft for Luke's sign-of
 Built from one input (`compound name`, plus optional identifiers / a target liability). The schema
 and the runtime-derived controlled vocabulary are baked in, so the output comes back in-format:
 
-> Produce a Chansu compound record for **{COMPOUND}**. Ground and return, each with a real PMID/DOI
-> citation: a canonical SMILES with its source (e.g. PubChem CID) and InChIKey if available; molecular
-> targets (name + role); druggability liabilities (kind + detail); activity-essential regions graded
-> high / medium / low, each with a reason and a locator SMARTS; and modifiable positions (label +
+> Produce a Chansu compound record for **{COMPOUND}**. Ground and return: a canonical SMILES with its
+> source (e.g. PubChem CID) and InChIKey if available; molecular targets (name + role), druggability
+> liabilities (kind + detail), and activity-essential regions graded high / medium / low (reason +
+> locator SMARTS), each backed by a real PMID/DOI citation; and modifiable positions (label +
 > attachment type + locator SMARTS). Emit exactly this JSON, filling every field you can ground and
 > listing anything you cannot under `"gaps"`: `{SCHEMA}`. Use the controlled vocabulary `{VOCAB}` for
 > attachment types and liability kinds where it fits. Real citations only, verifiable on PubMed; no
@@ -184,13 +184,12 @@ sections, all built to the chansu-design system (`.cs-*` classes, three type reg
 - **Section 1 — Prompt builder.** A Sans input for the compound name (optional liability focus). On
   submit, render the per-compound prompt and the project-setup block in mono code blocks (machine
   chrome), each with a Copy control (brass = interaction). Eyebrow labels (`.cs-eyebrow`).
-- **Section 2 — Paste / upload the record (Producer A, the priority).** A text area (paste JSON or
-  markdown) plus a file uploader; a **Validate** button (brass). The gate report renders in the
-  design language: `pass` → quiet `.cs-pass`; structural fails → `.cs-flagcard` + `.cs-flag`
-  (`--high`); soft/unverified → calm `.cs-declined` (never the flag register); each citation as a
-  `.cs-cite` mono line + a `.cs-prov` tag (`lit` / `uncited`) + a PubMed/DOI link; SMILES/identifiers
-  in mono; formulae and names via `formula()` / `chem()`. On pass (or acknowledged flags) an **Import**
-  button writes the file; a `.cs-pass` confirms and the compound appears in the selector.
+- **Section 2 — Paste / upload the record (Producer A, the priority).** A text area (paste the JSON
+  record) plus a JSON file uploader. The gate report renders every check as a compact row (mirroring
+  the reasoning-checks panel): a mono level label coloured by state (`pass` → `--pass`, hard fail →
+  `--high`, advisory flag/info → calm muted ink), the message, and for a citation check a `.cs-prov`
+  tag (`lit` / `uncited`) plus a PubMed/DOI link. On pass (or acknowledged flags) an **Import** button
+  writes the file; a `.cs-pass` confirms and the compound appears in the selector.
 - **Section 3 — Research-log structuring (Producer B, wired-but-later).** Present as an architected
   placeholder until the model layer lands: a raw-log text area, a model picker (from the multi-model
   feature), a **Structure with model** action, the drafted **partial** record with an honest
@@ -207,6 +206,11 @@ sections, all built to the chansu-design system (`.cs-*` classes, three type reg
 - **Provenance on the record.** Stamp `annotations.source` (e.g. `"claude-science-import"` /
   `"research-log:model"`) so curated vs. imported compounds are distinguishable, and the memo's
   data-provided notes stay honest.
+- **Persisted provenance (scope).** The `annotations.source` stamp is the provenance an imported
+  compound carries. Per-claim persisted status — which citations stayed unverified, which flags the
+  chemist acknowledged — is **deferred** (a Producer B / future concern); until then, an imported
+  compound is only as trustworthy as its `source`, and the memo already labels data-provided notes as
+  unverified. The gate never promotes a citation lacking an identifier to cited (it stays `[uncited]`).
 - **Git nuance (decision for Luke).** Writing into `data/compounds/` makes imports working-tree files
   (like `ursolic_acid.json`). For the demo that is fine. If we would rather keep demo imports out of
   git, add a `data/compounds/imported/` subfolder to the selector glob and gitignore it — a small,

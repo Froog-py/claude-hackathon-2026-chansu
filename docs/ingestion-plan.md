@@ -1,6 +1,8 @@
 # Compound Ingestion (Path A) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **Point-in-time note:** this is a build guide. Where it differs from the shipped result, the code in `chansu/` and `docs/ingestion-design.md` are authoritative — during implementation and review the gate gained non-dict guards, a loadability guard, and `.cs-prov` citation tags, and the report rows evolved from the sketch below.
 
 **Goal:** Let a chemist bring a new compound into Chansu from a Claude Science literature review through a pure-Python validation gate, with no engine change (adding a compound stays data-only).
 
@@ -610,11 +612,10 @@ def build_review_prompt(name: str, vocabulary: tuple, liability_focus: Optional[
     focus = f" Focus especially on the liability: {liability_focus}." if liability_focus else ""
     return (
         f"Produce a Chansu compound record for {name}.{focus}\n\n"
-        "Ground and return, each with a real PMID/DOI citation: a canonical SMILES with its source "
-        "(for example a PubChem CID) and InChIKey if available; molecular targets (name + role); "
-        "druggability liabilities (kind + detail); activity-essential regions graded high / medium / "
-        "low, each with a reason and a locator SMARTS; and modifiable positions (label + attachment "
-        "type + locator SMARTS).\n\n"
+        "Ground and return: a canonical SMILES with its source (for example a PubChem CID) and InChIKey "
+        "if available; molecular targets (name + role), druggability liabilities (kind + detail), and "
+        "activity-essential regions graded high / medium / low (reason + locator SMARTS), each backed by "
+        "a real PMID/DOI citation; and modifiable positions (label + attachment type + locator SMARTS).\n\n"
         f"Emit exactly this JSON, filling every field you can ground and listing anything you cannot "
         f"under \"gaps\":\n{RECORD_SCHEMA}\n\n"
         f"Controlled vocabulary. Attachment types: {sorted(attach)}. Liability kinds: {sorted(liab)}. "

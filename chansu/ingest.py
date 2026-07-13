@@ -30,6 +30,7 @@ class Check:
     message: str
     subject: Optional[str] = None
     link: Optional[str] = None
+    prov: Optional[str] = None   # citation checks set "lit" | "uncited" so the UI can tag them
 
 
 @dataclass
@@ -99,7 +100,7 @@ def _structural_checks(record: dict, existing_ids) -> tuple:
             elif Chem.MolFromSmarts(smarts) is None:
                 checks.append(Check("fail", f"{kind}[{i}] locator smarts is invalid: {smarts!r}.", subject=kind))
 
-    kinds = [l.get("kind") for l in record.get("liabilities", []) if l.get("kind")]
+    kinds = [liab.get("kind") for liab in record.get("liabilities", []) if liab.get("kind")]
     dupes = sorted({k for k in kinds if kinds.count(k) > 1})
     if dupes:
         checks.append(Check(
@@ -129,13 +130,13 @@ def _citation_checks(kind: str, items: list, label_key: str) -> list:
             checks.append(Check(
                 "flag",
                 f"{kind} {label!r} has no verifiable citation (PMID/DOI); tagged uncited until confirmed.",
-                subject=kind,
+                subject=kind, prov="uncited",
             ))
         else:
             link = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else f"https://doi.org/{doi}"
             checks.append(Check(
                 "info", f"{kind} {label!r}: citation identifier present. Confirm before trusting.",
-                subject=kind, link=link,
+                subject=kind, link=link, prov="lit",
             ))
     return checks
 
@@ -167,8 +168,8 @@ def _advisory_checks(record: dict, mol, attach_vocab: set, liab_vocab: set) -> l
                 subject="modifiable_positions",
             ))
 
-    for l in record.get("liabilities", []):
-        kind = l.get("kind")
+    for liab in record.get("liabilities", []):
+        kind = liab.get("kind")
         if kind and kind not in liab_vocab:
             checks.append(Check(
                 "flag",
@@ -193,12 +194,23 @@ def _advisory_checks(record: dict, mol, attach_vocab: set, liab_vocab: set) -> l
 
 def validate_record(record: dict, strategies: list, existing_ids=frozenset()) -> IngestReport:
     """Validate a raw compound record and return a full, transparent report. Never raises on bad
-    input — a malformed record produces ``fail`` checks, not an exception. ``existing_ids`` lets the
-    caller flag (not block) an id that would overwrite an existing compound."""
-    checks, mol, canonical = _structural_checks(record, existing_ids)
-    if mol is not None:
-        attach_vocab, liab_vocab = derive_vocabulary(strategies)
-        checks += _advisory_checks(record, mol, attach_vocab, liab_vocab)
+    input — a malformed record (wrong top-level type, or a nested field of the wrong shape) produces
+    ``fail`` checks, not an exception. ``existing_ids`` lets the caller flag (not block) an id that
+    would overwrite an existing compound."""
+    if not isinstance(record, dict):
+        return IngestReport(ok=False, record={}, checks=[Check("fail", "Record must be a JSON object.", subject="record")])
+    try:
+        checks, mol, canonical = _structural_checks(record, existing_ids)
+        if mol is not None:
+            attach_vocab, liab_vocab = derive_vocabulary(strategies)
+            checks += _advisory_checks(record, mol, attach_vocab, liab_vocab)
+    except (AttributeError, TypeError):
+        # a nested field is the wrong shape (a string/scalar where an object or list is expected)
+        return IngestReport(
+            ok=False, record=record, compound_id=record.get("id"),
+            checks=[Check("fail", "A field is the wrong shape: structure, and each targets / liabilities / "
+                          "importance_map / modifiable_positions item, must be an object.", subject="record")],
+        )
     out = record
     if canonical:
         out = {**record, "structure": {**record.get("structure", {}), "smiles": canonical}}

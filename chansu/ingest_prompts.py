@@ -64,11 +64,10 @@ def build_review_prompt(name: str, vocabulary: tuple, liability_focus: Optional[
     focus = f" Focus especially on the liability: {liability_focus}." if liability_focus else ""
     return (
         f"Produce a Chansu compound record for {name}.{focus}\n\n"
-        "Ground and return, each with a real PMID/DOI citation: a canonical SMILES with its source "
-        "(for example a PubChem CID) and InChIKey if available; molecular targets (name + role); "
-        "druggability liabilities (kind + detail); activity-essential regions graded high / medium / "
-        "low, each with a reason and a locator SMARTS; and modifiable positions (label + attachment "
-        "type + locator SMARTS).\n\n"
+        "Ground and return: a canonical SMILES with its source (for example a PubChem CID) and InChIKey "
+        "if available; molecular targets (name + role), druggability liabilities (kind + detail), and "
+        "activity-essential regions graded high / medium / low (reason + locator SMARTS), each backed by "
+        "a real PMID/DOI citation; and modifiable positions (label + attachment type + locator SMARTS).\n\n"
         "Emit exactly this JSON, filling every field you can ground and listing anything you cannot "
         f'under "gaps":\n{RECORD_SCHEMA}\n\n'
         f"Controlled vocabulary. Attachment types: {sorted(attach)}. Liability kinds: {sorted(liab)}. "

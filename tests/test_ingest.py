@@ -1,5 +1,6 @@
 """Tests for the deterministic ingest gate (chansu/ingest.py). Pure Python; a small aspirin record
 stands in for any compound — the gate is generic (§5)."""
+import pytest
 from rdkit import Chem
 
 from chansu import ingest
@@ -93,6 +94,22 @@ def test_unsafe_id_hard_fails():
         assert any(c.level == "fail" and c.subject == "id" for c in report.checks)
 
 
+def test_non_dict_record_fails_without_raising():
+    for bad in ["a string", 42, ["a", "list"], None]:
+        report = ingest.validate_record(bad, load_strategies())
+        assert not report.ok
+
+
+def test_malformed_nested_field_fails_without_raising():
+    # a string/scalar where an object is expected must be a clean fail, never a raise
+    for bad in ({**_VALID, "structure": "not-a-dict"},
+                {**_VALID, "liabilities": ["scalar"]},
+                {**_VALID, "targets": ["scalar"]}):
+        report = ingest.validate_record(bad, load_strategies())
+        assert not report.ok
+        assert any(c.level == "fail" for c in report.checks)
+
+
 # --- Task 3: advisory soft-flags -------------------------------------------------------------
 
 def test_unresolvable_locator_flags():
@@ -160,8 +177,5 @@ def test_write_record_round_trips(tmp_path):
 
 def test_write_record_refuses_a_failing_record(tmp_path):
     report = ingest.validate_record({**_VALID, "structure": {"smiles": "x)("}}, load_strategies())
-    try:
+    with pytest.raises(ValueError):
         ingest.write_record(report, override=tmp_path)
-        assert False, "should have refused a failing record"
-    except ValueError:
-        pass

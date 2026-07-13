@@ -25,6 +25,8 @@ _LEVEL = {
     "flag": ("var(--ink-2)", "flag"),
     "info": ("var(--ink-3)", "info"),
 }
+# provenance chip labels for citation checks (the .cs-prov classes carry the colour)
+_PROV_LABEL = {"lit": "literature · cited", "uncited": "uncited"}
 
 
 def _prompt_builder(strategies: list) -> None:
@@ -55,10 +57,11 @@ def _render_report(report) -> None:
         colour, lbl = _LEVEL.get(c.level, ("var(--ink-3)", c.level))
         link = (f" <a href='{html.escape(c.link)}' target='_blank' style='color:var(--brass)'>source</a>"
                 if c.link else "")
+        prov = (f" <span class='cs-prov {c.prov}'>{_PROV_LABEL.get(c.prov, c.prov)}</span>" if c.prov else "")
         rows.append(
             "<div style='margin-top:4px;font-size:12px'>"
             f"<span style='font-family:var(--font-mono);font-size:11px;color:{colour}'>{lbl}</span>"
-            f"<span style='color:var(--ink-2);margin-left:8px'>{html.escape(c.message)}</span>{link}</div>"
+            f"<span style='color:var(--ink-2);margin-left:8px'>{html.escape(c.message)}</span>{prov}{link}</div>"
         )
     st.markdown("".join(rows), unsafe_allow_html=True)
 
@@ -70,7 +73,18 @@ def _paste_and_gate(strategies: list) -> None:
         "Paste the JSON record", key="ingest_raw", height=180, label_visibility="collapsed",
         placeholder="Paste the JSON record returned by Claude Science here",
     )
-    text = up.getvalue().decode("utf-8") if up is not None else raw
+    if up is not None:
+        try:
+            text = up.getvalue().decode("utf-8")
+        except UnicodeDecodeError:
+            st.markdown(
+                "<div class='cs-flagcard'><span class='cs-flag'>invalid</span>File is not valid UTF-8 text; "
+                "upload a JSON text file.</div>",
+                unsafe_allow_html=True,
+            )
+            return
+    else:
+        text = raw
     if not text or not text.strip():
         return
     try:
