@@ -15,6 +15,10 @@ dev = ["pytest>=8.0"]
 # The Claude reasoning backend (chansu.reasoning.adapter.ClaudeReasoningModel). Optional and
 # imported lazily so the core runs without it.
 claude = ["anthropic>=0.40"]
+# OpenAI-compatible reasoning backends (ChatGPT, a local Ollama/vLLM server, any /v1 endpoint),
+# imported lazily. python-dotenv lets the Streamlit app load API keys from a local .env.
+openai = ["openai>=1.40"]
+app = ["python-dotenv>=1.0"]
 
 [project.scripts]
 chansu = "chansu.cli:main"
