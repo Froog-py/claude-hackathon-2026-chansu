@@ -24,7 +24,7 @@ def _hero(compound) -> None:
     class_ = compound.annotations.get("class")
     chip = f"<span class='cs-chip'>{_esc(class_)}</span>" if class_ else ""
     extra = [a for a in compound.aliases if a.strip().lower() != compound.name.strip().lower()]
-    sub = f"<p class='cs-sub'>Also known as {_esc(', '.join(extra))}</p>" if extra else ""
+    sub = f"<p class='cs-sub'>Also known as {chem(', '.join(extra), serif=True)}</p>" if extra else ""
     st.markdown(
         f"<p class='cs-eyebrow'>Compound</p>"
         f"<div style='display:flex;align-items:baseline;gap:14px;flex-wrap:wrap'>"

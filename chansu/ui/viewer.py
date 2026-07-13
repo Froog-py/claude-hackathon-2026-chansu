@@ -35,7 +35,8 @@ _STYLE_3D = {
 _REPRESENTATIONS = [_SKELETAL, *_STYLE_3D.keys()]
 
 _W, _H = 880, 500
-_BG_3D = "#0E1216"
+_BG_3D = "#0C0F12"                  # --bg: the 3D canvas matches the page ground
+_BG_RGB = (0.047, 0.059, 0.071)     # --bg as RDKit 0..1 RGB, so the 2D canvas matches the page too
 
 
 def _highlights_2d(compound, mol) -> dict:
@@ -74,14 +75,18 @@ def _legend(compound) -> None:
 
 def _render_2d(compound, mol, highlight_on: bool) -> None:
     highlights = _highlights_2d(compound, mol) if highlight_on else None
-    svg = draw_molecule_svg(mol, highlight_atoms=highlights, size=(_W, _H), dark=True)
+    svg = draw_molecule_svg(mol, highlight_atoms=highlights, size=(_W, _H), dark=True, background=_BG_RGB)
     components.html(f"<div style='display:flex;justify-content:center'>{svg}</div>", height=_H + 16)
 
 
 def _render_3d(compound, mol, style, highlight_on: bool) -> None:
     block = molblock_3d(mol)
     if block is None:
-        st.warning("3D coordinates could not be generated for this structure. Showing the skeletal view instead.")
+        st.markdown(
+            "<div class='cs-declined'>3D coordinates could not be generated for this structure. "
+            "Showing the skeletal view instead.</div>",
+            unsafe_allow_html=True,
+        )
         _render_2d(compound, mol, highlight_on)
         return
     try:

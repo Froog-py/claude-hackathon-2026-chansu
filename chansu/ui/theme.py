@@ -145,6 +145,13 @@ hr, [data-testid="stDivider"] { border-color:var(--border) !important; }
 /* honest-failure / model-declined — calm, not an error */
 .cs-declined { display:inline-flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.03em; color:var(--ink-2); background:var(--card-2); border:1px solid var(--border); border-radius:6px; padding:3px 10px; }
 
+/* gate pass / verified — calm, quiet (not celebratory) (§7): --pass accent, no filled box */
+.cs-pass { display:block; font-family:var(--font-sans); font-size:0.9rem; color:var(--ink-2); background:rgba(104,177,140,0.08); border:1px solid rgba(104,177,140,0.30); border-left:3px solid var(--pass); border-radius:8px; padding:10px 13px; }
+.cs-pass b, .cs-pass strong { color:var(--pass); font-weight:600; }
+
+/* gate flag — the §7 gate act: high-importance (--high) border + tint framing the .cs-flag label */
+.cs-flagcard { background:rgba(217,112,112,0.06); border:1px solid rgba(217,112,112,0.32); border-radius:12px; padding:13px 15px; margin:0 0 10px; }
+
 .cs-rule { height:1px; background:var(--border); border:0; margin:24px 0; }
 
 /* --- motion (background enhancement; reduced-motion safe) ------------------ */
