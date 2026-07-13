@@ -19,6 +19,7 @@ if str(_REPO_ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from chansu.ui import state, theme  # noqa: E402
+from chansu.ui.ingest import render_ingest  # noqa: E402
 from chansu.ui.memo import render_memo_tab  # noqa: E402
 from chansu.ui.sources import render_sources  # noqa: E402
 from chansu.ui.workspace import render_workspace  # noqa: E402
@@ -86,13 +87,17 @@ def main() -> None:
     mol = state.mol_for(compound)
     model = state.get_reasoning_model()
 
-    workspace_tab, memo_tab, sources_tab = st.tabs(["Workspace", "Design memo", "Sources / Reference"])
+    workspace_tab, memo_tab, sources_tab, ingest_tab = st.tabs(
+        ["Workspace", "Design memo", "Sources / Reference", "Add compound"]
+    )
     with workspace_tab:
         render_workspace(compound, mol, result)
     with memo_tab:
         render_memo_tab(compound, mol, result, model)
     with sources_tab:
         render_sources(compound, state.get_strategies())
+    with ingest_tab:
+        render_ingest(state.get_strategies())
 
 
 main()
