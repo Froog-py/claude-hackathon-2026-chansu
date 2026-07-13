@@ -14,12 +14,13 @@ canonical "warhead" moment, §13); the invalid-structure half lives in generatio
 
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass
 
 import streamlit as st
 
 from ..core.generation import importance_gate_flags, resolve_position
-from .notation import sci
+from .notation import chem, sci
 
 
 @dataclass
@@ -80,22 +81,34 @@ def render_gate_seam(compound, mol) -> None:
 
     flags = importance_gate_flags(compound, mol, site.atom_idx) if site.atom_idx is not None else []
     if not flags:
-        st.success(
-            f"No high-importance conflict. An edit at **{sci(site.label)}** is not in a region the "
-            "importance map flags. It still needs wet-lab validation like any hypothesis."
+        st.markdown(
+            f"<div class='cs-pass'>No high-importance conflict. An edit at <b>{chem(site.label, serif=False)}</b> "
+            "is not in a region the importance map flags. It still needs wet-lab validation like any hypothesis.</div>",
+            unsafe_allow_html=True,
         )
         return
 
     for flag in flags:
-        st.warning(f"⚠ {sci(flag.message)}")
+        cite = ""
         if getattr(flag, "citation", None) and flag.citation.source:
-            st.caption(f"[literature · cited] · {flag.citation.source}")
+            cite = ("<div style='margin-top:6px'><span class='cs-prov lit'>literature · cited</span> "
+                    f"<span class='cs-cite'>{html.escape(flag.citation.source)}</span></div>")
+        st.markdown(
+            f"<div class='cs-flagcard'><div><span class='cs-flag'>flag</span>{chem(flag.message, serif=False)}</div>{cite}</div>",
+            unsafe_allow_html=True,
+        )
         ovr_key = f"gate_ovr_{compound.id}_{site.key}_{flag.region_id}"
         recorded = st.session_state.get(ovr_key)
         if recorded:
-            st.success(f"Overridden by chemist. Reason recorded: {recorded}")
+            st.markdown(
+                f"<div class='cs-sub'>Overridden by chemist. Reason recorded: {html.escape(recorded)}</div>",
+                unsafe_allow_html=True,
+            )
             continue
-        st.caption("This is flagged, not forbidden. Override it if the edit is intended.")
+        st.markdown(
+            "<div class='cs-sub'>Flagged, not forbidden. Override it if the edit is intended.</div>",
+            unsafe_allow_html=True,
+        )
         reason = st.text_input("Override reason (recorded)", key=f"reason_{ovr_key}")
         if st.button("Record override", key=f"btn_{ovr_key}"):
             try:
@@ -103,4 +116,7 @@ def render_gate_seam(compound, mol) -> None:
                 st.session_state[ovr_key] = flag.override_reason
                 st.rerun()
             except ValueError as exc:
-                st.error(str(exc))
+                st.markdown(
+                    f"<div class='cs-sub' style='color:var(--high)'>{html.escape(str(exc))}</div>",
+                    unsafe_allow_html=True,
+                )

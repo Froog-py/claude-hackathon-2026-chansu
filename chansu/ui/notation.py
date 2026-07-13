@@ -46,7 +46,9 @@ def _glyphs(s: str) -> str:
 def _italics(s: str) -> str:
     """Italic stereodescriptors and locant prefixes, as HTML (chansu-design section 4)."""
     s = re.sub(r"\(([RSEZ]|RS)\)", r"(<i>\1</i>)", s)
-    return re.sub(r"\b(tert|sec|cis|trans)-", r"<i>\1</i>-", s)
+    s = re.sub(r"\b(tert|sec|cis|trans)-", r"<i>\1</i>-", s)
+    # single-letter locant prefixes rendered italic before a hyphenated letter (chansu-design section 4)
+    return re.sub(r"\b([NOomp])-(?=[A-Za-z])", r"<i>\1</i>-", s)
 
 
 def sci(text) -> str:

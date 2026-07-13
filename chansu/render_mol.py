@@ -26,12 +26,15 @@ def draw_molecule_svg(
     highlight_atoms: Optional[dict] = None,   # {atom_idx: (r, g, b)} in 0..1
     size: tuple = (520, 400),
     dark: bool = False,
+    background: Optional[tuple] = None,        # (r, g, b) in 0..1; overrides the dark-mode default
 ) -> str:
     """A 2D Lewis-structure SVG. Element colouring is always on (RDKit default); ``highlight_atoms`` adds
     the importance-map overlay as coloured halos over the mapped atoms (and the bonds internal to a
     highlighted set), leaving the element colouring intact. Deterministic for a given input.
 
-    Operates on a copy so the caller's ``mol`` is never mutated (a 2D conformer is added for drawing).
+    ``background`` sets the canvas colour explicitly (e.g. to match a host theme's ground); when omitted,
+    ``dark`` uses RDKit's default dark background. Operates on a copy so the caller's ``mol`` is never
+    mutated (a 2D conformer is added for drawing).
     """
     m = Chem.Mol(mol)
     if m.GetNumConformers() == 0:
@@ -54,6 +57,8 @@ def draw_molecule_svg(
     drawer = rdMolDraw2D.MolDraw2DSVG(size[0], size[1])
     if dark:
         rdMolDraw2D.SetDarkMode(drawer)  # dark background + light bonds/atoms, to match a dark UI theme
+    if background is not None:
+        drawer.drawOptions().setBackgroundColour(background)  # override the ground to the host theme
     rdMolDraw2D.PrepareAndDrawMolecule(
         drawer, m,
         highlightAtoms=atoms, highlightAtomColors=atom_colors,

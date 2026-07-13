@@ -24,7 +24,7 @@ def _hero(compound) -> None:
     class_ = compound.annotations.get("class")
     chip = f"<span class='cs-chip'>{_esc(class_)}</span>" if class_ else ""
     extra = [a for a in compound.aliases if a.strip().lower() != compound.name.strip().lower()]
-    sub = f"<p class='cs-sub'>Also known as {_esc(', '.join(extra))}</p>" if extra else ""
+    sub = f"<p class='cs-sub'>Also known as {chem(', '.join(extra), serif=True)}</p>" if extra else ""
     st.markdown(
         f"<p class='cs-eyebrow'>Compound</p>"
         f"<div style='display:flex;align-items:baseline;gap:14px;flex-wrap:wrap'>"
@@ -62,7 +62,8 @@ def _properties(mol) -> None:
     veb = f"<div class='cs-stat'><div class='n {veb_cls}'>{'pass' if p.veber_pass else 'fail'}</div><div class='l'>Veber</div></div>"
     st.markdown("<p class='cs-eyebrow'>Computed properties · RDKit</p>", unsafe_allow_html=True)
     st.markdown(f"<div class='cs-stats'>{formula_stat}{stat_html}{lip}{veb}</div>", unsafe_allow_html=True)
-    st.caption("Deterministic. Math, not opinion. Every value is `[computed]` and reproducible from the verified structure.")
+    st.markdown("<div style='margin-top:10px'><span class='cs-prov computed'>computed</span></div>", unsafe_allow_html=True)
+    st.caption("Deterministic. Math, not opinion. Reproducible from the verified structure.")
 
 
 def _cite(obj) -> str:
@@ -82,7 +83,7 @@ def _grounding(compound) -> None:
         st.markdown("###### Targets")
         for t in compound.targets:
             st.markdown(
-                f"<div class='cs-card'><div class='t'>{chem(t.name)}</div>"
+                f"<div class='cs-card'><div class='t'>{chem(t.name, serif=False)}</div>"
                 f"<div class='d'>{chem(t.role or '', serif=False)}</div>{_cite(t)}</div>",
                 unsafe_allow_html=True,
             )
