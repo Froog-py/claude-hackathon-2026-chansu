@@ -1,0 +1,152 @@
+{
+  "id": "ursolic_acid",
+  "name": "Ursolic Acid",
+  "aliases": [
+    "3\u03b2-hydroxy-urs-12-en-28-oic acid"
+  ],
+  "structure": {
+    "smiles": "C[C@@H]1CC[C@@]2(CC[C@@]3(C(=CC[C@H]4[C@]3(CC[C@@H]5[C@@]4(CC[C@@H](C5(C)C)O)C)C)[C@@H]2[C@H]1C)C)C(=O)O",
+    "source": "PubChem",
+    "source_id": "CID 64945",
+    "inchikey": "WCGUUGGRBIKTOS-GPOJBZKASA-N",
+    "retrieved": "2026-07-12"
+  },
+  "annotations": {
+    "class": "pentacyclic triterpenoid (ursane-type)",
+    "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with real, NCBI-verified citations (PROJECT.md \u00a76, \u00a77).",
+    "validation_note": "Ursolic acid is a benign natural product from apple peels, medicinal herbs, and plant sources; exceptionally well-tolerated in preclinical and clinical studies. Primary druggability challenge is poor solubility/bioavailability, a canonical target for ester-prodrug masking. The C-3 hydroxyl is a classical glycosylation site for both solubility improvement and selectivity tuning. Both strategies are precedented: nanoformulations, phospholipid complexes, and synthetic sugar conjugates all demonstrate bioavailability rescue; SAR studies confirm C-3 and C-28 are modifiable without destroying core activity."
+  },
+  "modifiable_positions": [
+    {
+      "id": "c3_oh",
+      "label": "C3 secondary hydroxyl",
+      "locator": {
+        "smarts": "[CH1][OX2H1]",
+        "target_atom": 1,
+        "label": "C3-OH oxygen"
+      },
+      "attachment_types": [
+        "hydroxyl",
+        "secondary_alcohol"
+      ],
+      "rationale": "Modifiable handle identified in SAR: glycosylation improves solubility and tunes selectivity. Site of synthetic mono- and bidesmosidic ursane saponins. Essential for activity in unmodified form but permissive for sugar/ester conjugation."
+    },
+    {
+      "id": "c28_cooh",
+      "label": "C28 carboxylic acid",
+      "locator": {
+        "smarts": "[CX3](=O)[OX2H1]",
+        "target_atom": 0,
+        "label": "C28-COOH carbonyl"
+      },
+      "attachment_types": [
+        "carboxyl"
+      ],
+      "rationale": "Second modifiable handle: ester-prodrug target for poor bioavailability. SAR shows C-28 carboxy is essential for native activity but permits hemisynthetic ester masks. Strategy: esterify with cleavable alcohol/acyloxy group to rescue oral bioavailability via prodrug activation."
+    }
+  ],
+  "importance_map": [
+    {
+      "id": "c3_hydroxyl",
+      "locator": {
+        "smarts": "[CH1][OX2H1]",
+        "target_atom": 1,
+        "label": "C3-OH oxygen"
+      },
+      "importance": "medium",
+      "reason": "Native C-3 hydroxyl is not essential for core activity but strongly tunes potency and selectivity. Glycosylation at C-3 is a validated strategy to improve aqueous solubility and biological activity; monosaccharide and disaccharide conjugates show retained or enhanced cytotoxicity vs. parent. SAR indicates modifications here are well-tolerated.",
+      "citation": {
+        "label": "Sylla B, et al. Synthesis and cytotoxicity evaluation of d- and l-sugar-containing mono- and bidesmosidic ursane-type saponins. Bioorg Med Chem. 2024;106:117737.",
+        "source": "PMID 38718553 | DOI 10.1016/j.bmc.2024.117737"
+      }
+    },
+    {
+      "id": "c28_carboxyl",
+      "locator": {
+        "smarts": "[CX3](=O)[OX2H1]",
+        "target_atom": 0,
+        "label": "C28-COOH carbonyl"
+      },
+      "importance": "medium",
+      "reason": "C-28 carboxylic acid is essential for native potency but a classical site for hemisynthetic ester/amide modification. Ester prodrugs are precedented in literature and mask lipophilicity to improve permeability and reduce first-pass metabolism. SAR and hemisynthetic work confirm this position is modifiable without destroying activity.",
+      "citation": {
+        "label": "Mlala S, et al. Ursolic Acid and Its Derivatives as Bioactive Agents. Molecules. 2019;24(15):2751.",
+        "source": "PMID 31362424 | DOI 10.3390/molecules24152751"
+      }
+    },
+    {
+      "id": "ursane_core_scaffold",
+      "locator": {
+        "smarts": "[CX3]=[CX3]",
+        "target_atom": 0,
+        "label": "C12=C13 double bond (ursane core)"
+      },
+      "importance": "high",
+      "reason": "The pentacyclic ursane skeleton with C12=C13 double bond is the core pharmacophore. Extensive SAR shows modifications to the core diminish activity. The C3-OH and C28-COOH are peripheral handles; the core cannot be altered without losing biological effect.",
+      "citation": {
+        "label": "Ren Y, et al. Cytotoxic and NF-\u03baB and mitochondrial transmembrane potential inhibitory pentacyclic triterpenoids from Syzygium corticosum and their semi-synthetic derivatives. Bioorg Med Chem. 2018;26(15):4452-60.",
+        "source": "PMID 30057155 | DOI 10.1016/j.bmc.2018.07.025"
+      }
+    }
+  ],
+  "targets": [
+    {
+      "name": "NF-\u03baB / Inflammatory signaling",
+      "role": "Ursolic acid is a multi-target agent that inhibits NF-\u03baB-mediated inflammation and multiple downstream transcription factors (c-Jun, STAT3, AP-1). This is implicated in its anticancer and anti-inflammatory activity across diverse cell types.",
+      "citation": {
+        "label": "Shanmugam MK, et al. Ursolic acid in cancer prevention and treatment: molecular targets, pharmacokinetics and clinical studies. Biochem Pharmacol. 2013;85(11):1579-87.",
+        "source": "PMID 23499879 | DOI 10.1016/j.bcp.2013.03.006"
+      }
+    },
+    {
+      "name": "IGF-1 / Akt / AMPK signaling (skeletal muscle)",
+      "role": "Ursolic acid enhances skeletal muscle insulin/IGF-I signaling (Akt, mTOR activation) and activates AMPK, promoting muscle hypertrophy, reducing atrophy, and improving metabolic fitness in mice and humans.",
+      "citation": {
+        "label": "Kunkel SD, et al. mRNA expression signatures of human skeletal muscle atrophy identify a natural compound that increases muscle mass. Cell Metab. 2011;13(6):627-38.",
+        "source": "PMID 21641545 | DOI 10.1016/j.cmet.2011.03.020"
+      }
+    },
+    {
+      "name": "Adipose thermogenesis (UCP1, PGC-1\u03b1)",
+      "role": "Ursolic acid modulates adipocyte transcription factors, activates AMPK, and increases expression of UCP1 and PGC-1\u03b1, promoting thermogenesis and reducing body fat and metabolic syndrome markers in rodent models.",
+      "citation": {
+        "label": "Katashima CK, et al. Ursolic acid and mechanisms of actions on adipose and muscle tissue: a systematic review. Obes Rev. 2017;18(6):700-711.",
+        "source": "PMID 28335087 | DOI 10.1111/obr.12523"
+      }
+    }
+  ],
+  "liabilities": [
+    {
+      "kind": "poor_solubility",
+      "detail": "Ursolic acid is a BCS Class IV compound (low solubility, low permeability) with poor aqueous solubility due to its lipophilic pentacyclic steroid-like scaffold. This is the primary barrier to oral bioavailability and formulation.",
+      "citation": {
+        "label": "Yu D, et al. Triple Strategies to Improve Oral Bioavailability by Fabricating Coamorphous Forms of Ursolic Acid with Piperine: Enhancing Water-Solubility, Permeability, and Inhibiting Cytochrome P450 Isozymes. Mol Pharm. 2020;17(12):4443-4462.",
+        "source": "PMID 32926628 | DOI 10.1021/acs.molpharmaceut.0c00443"
+      }
+    },
+    {
+      "kind": "poor_oral_bioavailability",
+      "detail": "Despite moderate potency in vitro, ursolic acid has low systemic exposure when dosed orally. Contributing factors: poor dissolution, low permeability across epithelial barriers, and rapid first-pass metabolism by CYP3A4, resulting in very short half-life and low plasma concentration.",
+      "citation": {
+        "label": "Sun Q, et al. Ursolic acid: A systematic review of its pharmacology, toxicity and rethink on its pharmacokinetics based on PK-PD model. Fitoterapia. 2020;147:104735.",
+        "source": "PMID 33010369 | DOI 10.1016/j.fitote.2020.104735"
+      }
+    },
+    {
+      "kind": "rapid_metabolism_cyp3a4",
+      "detail": "Ursolic acid is rapidly metabolized by hepatic CYP3A4 and other cytochrome P450 isozymes. Phase I clinical trial of ursolic acid liposomes showed no accumulation on multiple dosing, indicating continuous clearance at therapeutic doses.",
+      "citation": {
+        "label": "Qian Z, et al. A phase I trial to evaluate the multiple-dose safety and antitumor activity of ursolic acid liposomes in subjects with advanced solid tumors. Biomed Res Int. 2015;2015:809714.",
+        "source": "PMID 25866811 | DOI 10.1155/2015/809714"
+      }
+    },
+    {
+      "kind": "promiscuous_targets_selectivity",
+      "detail": "Ursolic acid is a promiscuous agent that binds and inhibits multiple unrelated targets across cell types (NF-\u03baB, AMPK, IGF-1 signaling, mitochondrial pathways, etc.). This broad activity profile means modification intended to tune one pathway may have off-target effects on others, complicating rational design of selective analogs.",
+      "citation": {
+        "label": "Shanmugam MK, et al. Ursolic acid in cancer prevention and treatment: molecular targets, pharmacokinetics and clinical studies. Biochem Pharmacol. 2013;85(11):1579-87.",
+        "source": "PMID 23499879 | DOI 10.1016/j.bcp.2013.03.006"
+      }
+    }
+  ]
+}

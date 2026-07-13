@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chansu — Design System v0.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* --- graphite scale (from the logo ground) --- */
+  --bg:#0C0F12;          /* page */
+  --bg-alt:#11151A;      /* alt sections, nav */
+  --surface:#161B21;     /* cards, panels */
+  --surface-2:#1D242C;   /* elevated */
+  --border:#28313A;      /* default border */
+  --border-sub:#1A2026;  /* subtle divider */
+
+  /* --- text --- */
+  --text:#E7E9EB;        /* primary, soft off-white (never pure) */
+  --text-mid:#98A2AD;    /* secondary */
+  --text-muted:#5A6570;  /* tertiary / placeholder */
+
+  /* --- brand accent: the logo's brass bond mark. interaction ONLY. --- */
+  --gold:#C99A46;
+  --gold-soft:#D8B76C;
+  --gold-dim:rgba(201,154,70,0.12);
+  --gold-border:rgba(201,154,70,0.32);
+
+  /* --- data palette: science ONLY. never interaction. grayscale-distinct. --- */
+  --imp-high:#D97070;    /* importance high  (bright) */
+  --imp-med:#D4A24A;     /* importance medium (mid)   */
+  --imp-low:#6E96B4;     /* importance low   (dark)   */
+  --pass:#68B18C;        /* gate pass / positive delta */
+  --flag:#D97070;        /* gate flag */
+  /* provenance */
+  --prov-computed:#5FA6B0;
+  --prov-lit:#68B18C;
+  --prov-reason:#A796CB;
+  --prov-hyp:#8A93A0;
+  --prov-uncited:#6B747E;
+
+  --font-sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono','SF Mono',monospace;
+  --font-serif:'IBM Plex Serif',Georgia,serif;
+
+  /* --- 8px spacing rhythm --- */
+  --s1:4px; --s2:8px; --s3:16px; --s4:24px; --s5:32px; --s6:48px; --s7:64px; --s8:96px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-sans);
+  font-weight:400;
+  line-height:1.6;
+  letter-spacing:-0.005em;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:var(--s8);
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 var(--s4)}
+
+/* hexagonal molecular lattice — the chemistry texture, not a terminal */
+.lattice{
+  background-image:
+    radial-gradient(circle at center, rgba(231,233,235,0.028) 1px, transparent 1.4px);
+  background-size:26px 45px;
+  background-position:0 0, 13px 22.5px;
+}
+
+/* ---------- type registers ---------- */
+.eyebrow{
+  font-family:var(--font-mono);font-size:11px;font-weight:500;
+  letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);
+}
+h1,h2,h3,h4{font-family:var(--font-sans);color:var(--text);font-weight:600}
+.display{font-size:clamp(2.4rem,5vw,3.4rem);font-weight:600;letter-spacing:-0.035em;line-height:1.02}
+.h-xl{font-size:clamp(1.7rem,3.2vw,2.3rem);letter-spacing:-0.03em;line-height:1.08;font-weight:600}
+.h-lg{font-size:1.35rem;letter-spacing:-0.022em;line-height:1.2;font-weight:600}
+.h-md{font-size:1.05rem;letter-spacing:-0.015em;font-weight:600}
+.mono{font-family:var(--font-mono);letter-spacing:0.01em}
+.serif{font-family:var(--font-serif)}
+.mid{color:var(--text-mid)}
+.muted{color:var(--text-muted)}
+
+/* section scaffolding */
+section{padding:var(--s7) 0;border-bottom:1px solid var(--border-sub)}
+.sec-head{margin-bottom:var(--s5);max-width:640px}
+.sec-head .eyebrow{display:block;margin-bottom:var(--s2)}
+.sec-head p{color:var(--text-mid);margin-top:var(--s2);font-size:1.02rem}
+.grid{display:grid;gap:var(--s3)}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:50;background:rgba(12,15,18,0.86);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--border);
+}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{display:block}
+.brand .wordmark{font-family:var(--font-sans);font-weight:500;font-size:1.05rem;letter-spacing:0.26em;color:var(--text)}
+.navlinks{display:flex;gap:var(--s4);font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase}
+.navlinks a{color:var(--text-muted);text-decoration:none;transition:color 120ms ease}
+.navlinks a:hover{color:var(--text)}
+@media(max-width:720px){.navlinks{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:var(--s8) 0 var(--s7);position:relative;overflow:hidden}
+.hero::before{
+  content:'';position:absolute;top:-140px;left:50%;transform:translateX(-50%);
+  width:760px;height:420px;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(201,154,70,0.07) 0%,transparent 68%);
+}
+.hero .lock{display:flex;align-items:center;gap:var(--s4);margin-bottom:var(--s5)}
+.hero .lede{max-width:600px;color:var(--text-mid);font-size:1.1rem;line-height:1.65;font-family:var(--font-sans);letter-spacing:-0.01em}
+.hero .meta{display:flex;gap:var(--s4);margin-top:var(--s5);flex-wrap:wrap}
+.hero .meta .cell{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);letter-spacing:0.04em}
+.hero .meta .cell b{display:block;color:var(--text);font-weight:500;font-size:13px;margin-top:2px}
+
+/* ---------- swatches ---------- */
+.swatch-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s2)}
+.swatch{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+.swatch .chip{height:64px}
+.swatch .meta{padding:10px 12px}
+.swatch .name{font-size:12.5px;font-weight:500}
+.swatch .hex{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px}
+.swatch .use{font-size:11px;color:var(--text-mid);margin-top:6px;line-height:1.4}
+
+/* ---------- specimen ---------- */
+.specimen{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:var(--s4);margin-bottom:var(--s3)}
+.specimen .reg-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s3);padding-bottom:var(--s2);border-bottom:1px solid var(--border-sub)}
+.specimen .reg-label .role{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase}
+.type-list > *{margin-bottom:12px}
+.type-list .note{font-family:var(--font-mono);font-size:10.5px;color:var(--text-muted);letter-spacing:0.04em}
+
+/* ---------- notation table (priority) ---------- */
+.notation{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.notation .nhead,.notation .nrow{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:1px}
+.notation .nhead{background:var(--border);border-bottom:1px solid var(--border)}
+.notation .nhead div{background:var(--surface-2);padding:10px 16px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)}
+.notation .nrow{background:var(--border);border-top:1px solid var(--border-sub)}
+.notation .nrow > div{background:var(--surface);padding:12px 16px;font-size:13.5px;display:flex;align-items:center}
+.notation .concept{color:var(--text-mid);font-size:12px}
+.notation .wrong{color:var(--imp-high);font-family:var(--font-mono);font-size:12.5px}
+.notation .wrong::before{content:'✕ ';opacity:0.7}
+.notation .right{color:var(--text);font-family:var(--font-mono);font-size:12.5px}
+.notation .right::before{content:'✓ ';color:var(--pass)}
+.sci{font-family:var(--font-serif)}
+i.stereo{font-style:italic}
+
+/* ---------- component atoms ---------- */
+.btn{font-family:var(--font-sans);font-size:13.5px;font-weight:500;border-radius:9px;padding:9px 18px;border:1px solid transparent;cursor:pointer;transition:transform 160ms ease,border-color 140ms ease,background 140ms ease,box-shadow 220ms ease;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--gold);color:#1c1405;font-weight:600}
+.btn-primary:hover{background:var(--gold-soft);box-shadow:0 0 22px rgba(201,154,70,0.18);transform:translateY(-1px)}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--gold-border);color:var(--gold-soft)}
+.btn-ghost{background:transparent;color:var(--text-mid)}
+.btn-ghost:hover{color:var(--text)}
+
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-mid)}
+
+/* provenance tags — the trust boundary, made visible */
+.prov{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.03em;padding:2px 9px;border-radius:5px;border:1px solid;white-space:nowrap}
+.prov::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.prov.computed{color:var(--prov-computed);border-color:rgba(95,166,176,0.32);background:rgba(95,166,176,0.09)}
+.prov.lit{color:var(--prov-lit);border-color:rgba(104,177,140,0.32);background:rgba(104,177,140,0.09)}
+.prov.reason{color:var(--prov-reason);border-color:rgba(167,150,203,0.32);background:rgba(167,150,203,0.09)}
+.prov.hyp{color:var(--prov-hyp);border-color:rgba(138,147,160,0.32);background:rgba(138,147,160,0.07);border-style:dashed}
+.prov.uncited{color:var(--prov-uncited);border-color:rgba(107,116,126,0.3);background:transparent;border-style:dashed}
+
+/* importance pills */
+.imp{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:2px 9px;border-radius:4px}
+.imp.high{color:var(--imp-high);background:rgba(217,112,112,0.13)}
+.imp.med{color:var(--imp-med);background:rgba(212,162,74,0.14)}
+.imp.low{color:var(--imp-low);background:rgba(110,150,180,0.15)}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:var(--s4);position:relative;overflow:hidden;transition:border-color 200ms ease,transform 360ms ease}
+.card:hover{border-color:var(--gold-border);transform:translateY(-2px)}
+.card-accent::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent 70%)}
+
+/* KV data rows */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 22px;align-items:baseline}
+.kv .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+.kv .v{font-family:var(--font-mono);font-size:13px;color:var(--text);word-break:break-all}
+
+/* stat strip */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border-sub);border:1px solid var(--border-sub);border-radius:11px;overflow:hidden}
+@media(max-width:760px){.stats{grid-template-columns:repeat(3,1fr)}}
+.stat{background:var(--surface);padding:14px 16px}
+.stat .n{font-family:var(--font-mono);font-size:1.15rem;font-weight:500;color:var(--text);line-height:1;letter-spacing:-0.01em}
+.stat .l{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-top:7px;line-height:1.4}
+
+hr.rule{border:0;height:1px;background:var(--border);margin:var(--s5) 0}
+
+/* applied mockup frame */
+.appframe{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg-alt)}
+.appbar{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.appbar .dot{width:11px;height:11px;border-radius:50%}
+.appbar .title{margin-left:8px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);letter-spacing:0.04em}
+.apptabs{display:flex;gap:2px;padding:0 16px;background:var(--bg-alt);border-bottom:1px solid var(--border)}
+.apptab{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:12px 14px;color:var(--text-muted);border-bottom:2px solid transparent;cursor:default}
+.apptab.on{color:var(--text);border-bottom-color:var(--gold)}
+.appbody{padding:var(--s5)}
+.appbody .col2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--s4)}
+@media(max-width:820px){.appbody .col2{grid-template-columns:1fr}}
+
+/* molecule viewer placeholder */
+.viewer{border:1px solid var(--border);border-radius:12px;background:var(--bg);position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:center}
+.viewer .legend{position:absolute;bottom:12px;left:12px;display:flex;gap:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-mid)}
+.viewer .legend span{display:inline-flex;align-items:center;gap:5px}
+.viewer .legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.viewer .ctrls{position:absolute;top:12px;right:12px;display:flex;gap:4px}
+.viewer .ctrls .b{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.05em;padding:3px 8px;border-radius:5px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface)}
+.viewer .ctrls .b.on{color:var(--gold);border-color:var(--gold-border)}
+
+.grounding-item{padding:14px 0;border-top:1px solid var(--border-sub)}
+.grounding-item:first-child{border-top:0}
+.grounding-item .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.grounding-item .name{font-weight:500;font-size:14px}
+.grounding-item .reason{color:var(--text-mid);font-size:13px;line-height:1.55}
+.grounding-item .cite{font-family:var(--font-mono);font-size:10.5px;color:var(--gold);margin-top:6px;display:inline-block}
+
+/* memo block */
+.memo{font-family:var(--font-mono);font-size:12px;line-height:1.75;color:var(--text-mid);background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:var(--s4);white-space:pre-wrap;overflow-x:auto}
+.memo .hd{color:var(--text);font-weight:600}
+.memo .g{color:var(--pass)}
+.memo .r{color:var(--flag)}
+.memo .go{color:var(--gold)}
+
+/* checks panel */
+.checks{display:flex;flex-direction:column;gap:1px;background:var(--border-sub);border:1px solid var(--border-sub);border-radius:11px;overflow:hidden}
+.check{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--surface);font-size:13px}
+.check .st{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+.check .st.pass{color:var(--pass);background:rgba(104,177,140,0.13)}
+.check .st.declined{color:var(--imp-med);background:rgba(212,162,74,0.13)}
+.check .lbl{color:var(--text)}
+.check .why{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
+
+/* gate seam */
+.gate{border:1px solid var(--flag);border-radius:12px;background:rgba(217,112,112,0.05);padding:var(--s4)}
+.gate.pass{border-color:rgba(104,177,140,0.4);background:rgba(104,177,140,0.05)}
+.gate .ghead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.gate .msg{font-size:13.5px;color:var(--text);line-height:1.55}
+.gate .override{margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--border);font-size:12.5px;color:var(--text-mid)}
+.gate .override .in{margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:var(--font-sans);font-size:13px;color:var(--text)}
+
+/* tone rules */
+.tone{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+@media(max-width:720px){.tone{grid-template-columns:1fr}}
+.tone .panel{border:1px solid var(--border);border-radius:11px;padding:var(--s4);background:var(--surface)}
+.tone .panel h4{margin-bottom:12px;font-size:13px;font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted)}
+.tone .ex{padding:9px 0;border-top:1px solid var(--border-sub);font-size:13px;line-height:1.5}
+.tone .ex:first-of-type{border-top:0}
+.tone .bad{color:var(--imp-high)}
+.tone .bad::before{content:'✕  ';opacity:0.7}
+.tone .good{color:var(--text)}
+.tone .good::before{content:'✓  ';color:var(--pass)}
+
+.footnote{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.03em;line-height:1.7}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="26" height="30" viewBox="0 0 26 30" fill="none" aria-hidden="true">
+        <path d="M13 1.5 L24 8 V22 L13 28.5 L2 22 V8 Z" stroke="#E7E9EB" stroke-width="1.6" fill="none"/>
+        <line x1="9" y1="15" x2="17" y2="15" stroke="#C99A46" stroke-width="2.2"/>
+      </svg>
+      <span class="wordmark">CHANSU</span>
+    </div>
+    <div class="navlinks">
+      <a href="#foundations">Foundations</a>
+      <a href="#notation">Notation</a>
+      <a href="#components">Components</a>
+      <a href="#applied">Applied</a>
+      <a href="#voice">Voice</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero lattice">
+  <div class="wrap">
+    <span class="eyebrow">Design System · v0.1 · proposal</span>
+    <div class="lock" style="margin-top:16px">
+      <svg width="60" height="70" viewBox="0 0 26 30" fill="none" aria-hidden="true">
+        <path d="M13 1.5 L24 8 V22 L13 28.5 L2 22 V8 Z" stroke="#E7E9EB" stroke-width="1.4" fill="none"/>
+        <line x1="9" y1="15" x2="17" y2="15" stroke="#C99A46" stroke-width="2"/>
+      </svg>
+      <h1 class="display">Chansu</h1>
+    </div>
+    <p class="lede">A visual system for a grounded medicinal-chemistry tool. Dark graphite, one brass accent carried from the mark, and three type registers borrowed from how chemistry is actually set on the page.</p>
+    <div class="meta">
+      <div class="cell">TYPE<b>IBM Plex Sans · Mono · Serif</b></div>
+      <div class="cell">ACCENT<b>Brass #C99A46</b></div>
+      <div class="cell">GROUND<b>Graphite #0C0F12</b></div>
+      <div class="cell">SURFACE<b>Streamlit app</b></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ FOUNDATIONS: COLOR ============ -->
+<section id="foundations">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Foundations · 01</span>
+      <h2 class="h-xl">Color is either brand or data. Never both.</h2>
+      <p>The brass accent marks interaction and nothing else. A separate, desaturated palette carries the science: importance grade, gate state, and provenance. Kept apart, each color means one thing.</p>
+    </div>
+
+    <h3 class="h-md mid" style="margin-bottom:12px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase">Graphite ground · 4 levels of depth without shadow</h3>
+    <div class="swatch-row" style="margin-bottom:var(--s5)">
+      <div class="swatch"><div class="chip" style="background:#0C0F12"></div><div class="meta"><div class="name">Page</div><div class="hex">#0C0F12</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#11151A"></div><div class="meta"><div class="name">Alt / nav</div><div class="hex">#11151A</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#161B21"></div><div class="meta"><div class="name">Surface</div><div class="hex">#161B21</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#1D242C"></div><div class="meta"><div class="name">Elevated</div><div class="hex">#1D242C</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#28313A"></div><div class="meta"><div class="name">Border</div><div class="hex">#28313A</div></div></div>
+    </div>
+
+    <h3 class="h-md mid" style="margin-bottom:12px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase">Text · soft off-white, never pure</h3>
+    <div class="swatch-row" style="margin-bottom:var(--s5)">
+      <div class="swatch"><div class="chip" style="background:#E7E9EB"></div><div class="meta"><div class="name">Primary</div><div class="hex">#E7E9EB</div><div class="use">Body, headings, structure ink</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#98A2AD"></div><div class="meta"><div class="name">Secondary</div><div class="hex">#98A2AD</div><div class="use">Reasons, descriptions</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#5A6570"></div><div class="meta"><div class="name">Tertiary</div><div class="hex">#5A6570</div><div class="use">Labels, metadata, placeholder</div></div></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:var(--s4)">
+      <div>
+        <h3 class="h-md mid" style="margin-bottom:12px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase">Brand accent · interaction only</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="chip" style="background:#C99A46"></div><div class="meta"><div class="name">Brass</div><div class="hex">#C99A46</div><div class="use">CTAs, links, focus, active tab, the mark</div></div></div>
+          <div class="swatch"><div class="chip" style="background:#DAB76C"></div><div class="meta"><div class="name">Brass soft</div><div class="hex">#DAB76C</div><div class="use">Hover</div></div></div>
+        </div>
+      </div>
+      <div>
+        <h3 class="h-md mid" style="margin-bottom:12px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase">Data palette · science only</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="chip" style="background:#D97070"></div><div class="meta"><div class="name">Importance high</div><div class="hex">#D97070</div></div></div>
+          <div class="swatch"><div class="chip" style="background:#D4A24A"></div><div class="meta"><div class="name">Medium</div><div class="hex">#D4A24A</div></div></div>
+          <div class="swatch"><div class="chip" style="background:#6E96B4"></div><div class="meta"><div class="name">Low</div><div class="hex">#6E96B4</div></div></div>
+          <div class="swatch"><div class="chip" style="background:#68B18C"></div><div class="meta"><div class="name">Pass / positive</div><div class="hex">#68B18C</div></div></div>
+        </div>
+      </div>
+    </div>
+    <p class="footnote" style="margin-top:var(--s4)">The importance ramp (high red / medium amber / low slate) differs in luminance as well as hue, so it survives grayscale and colorblind reading. Requirement inherited from the molecule-viewer legend spec.</p>
+  </div>
+</section>
+
+<!-- ============ FOUNDATIONS: TYPE ============ -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Foundations · 02</span>
+      <h2 class="h-xl">Three registers, from how chemistry is set.</h2>
+      <p>Chemistry text runs three typefaces at once: monospace for instrument data, a neutral grotesque for figure and interface prose, a serif for published narrative. Chansu uses all three, each with a fixed job.</p>
+    </div>
+
+    <div class="specimen">
+      <div class="reg-label"><span class="h-md">IBM Plex Sans</span><span class="role">Interface · headings · prose</span></div>
+      <div class="type-list">
+        <div class="display">Bufalin</div><div class="note">display · 54px · -0.035em</div>
+        <div class="h-lg">Grounded importance map</div><div class="note">h-lg · 22px · -0.022em</div>
+        <div style="font-size:15px;color:var(--text-mid);max-width:60ch">Readable interface copy. Engineered and neutral, the lineage of ChemDraw atom labels and modern journal figure captions. Comfortable at reading sizes, never editorial.</div>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <div class="reg-label"><span class="h-md mono">IBM Plex Mono</span><span class="role">All data · UI chrome</span></div>
+      <div class="type-list">
+        <div class="mono" style="font-size:15px;color:var(--text)">QEEBRPGZBVVINN-BMPKRDENSA-N</div><div class="note">InChIKey · fixed-width alignment</div>
+        <div class="mono" style="font-size:13px;color:var(--text-mid);word-break:break-all">C[C@]12CC[C@@H](C[C@H]1CC[C@@H]3[C@@H]2CC[C@]4([C@@]3(CC[C@@H]4C5=COC(=O)C=C5)O)C)O</div><div class="note">canonical SMILES</div>
+        <div class="mono" style="font-size:12px;color:var(--gold)">PMID 25624492 · DOI 10.1073/pnas.1422997112</div><div class="note">citation source · eyebrows, tags, locants, deltas all live here</div>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <div class="reg-label"><span class="h-md serif">IBM Plex Serif</span><span class="role">Reserved · long-form narrative</span></div>
+      <div class="type-list">
+        <div class="serif" style="font-size:16px;color:var(--text);line-height:1.7;max-width:64ch">The C14 β-hydroxyl hydrogen-bonds within the Na⁺/K⁺-ATPase pocket. Held in reserve for the design memo's narrative synthesis, where a journal-body voice reinforces that every claim traces to the literature.</div>
+        <div class="note">optional register · signals published authority · used sparingly</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NOTATION (PRIORITY) ============ -->
+<section id="notation" class="lattice">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Foundations · 03 · priority</span>
+      <h2 class="h-xl">Chemical notation, set correctly.</h2>
+      <p>This is the line between a real tool and a coded demo. Stereodescriptors and prefixes are italic, locants use Greek and primes, formulae use true sub- and superscripts. The build rules make these mandatory in every rendered string.</p>
+    </div>
+
+    <div class="notation">
+      <div class="nhead"><div>Rule</div><div>Wrong</div><div>Right</div></div>
+      <div class="nrow">
+        <div class="concept">Subscripts in formulae</div>
+        <div class="wrong">C24H34O5</div>
+        <div class="right"><span class="sci">C<sub>24</sub>H<sub>34</sub>O<sub>5</sub></span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Superscript charges</div>
+        <div class="wrong">Na+/K+-ATPase</div>
+        <div class="right"><span class="sci">Na<sup>+</sup>/K<sup>+</sup>-ATPase</span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Greek stereo-locants</div>
+        <div class="wrong">14-beta-hydroxyl</div>
+        <div class="right"><span class="sci">14<i class="stereo">β</i>-hydroxyl</span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Italic configuration</div>
+        <div class="wrong">(3R,5R)-config</div>
+        <div class="right"><span class="sci">(3<i class="stereo">R</i>,5<i class="stereo">R</i>)</span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Italic locant prefixes</div>
+        <div class="wrong">tert-butyl · N-methyl</div>
+        <div class="right"><span class="sci"><i class="stereo">tert</i>-butyl · <i class="stereo">N</i>-methyl</span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Ring / double-bond descriptors</div>
+        <div class="wrong">alpha-pyranone · E-alkene</div>
+        <div class="right"><span class="sci"><i class="stereo">α</i>-pyranone · (<i class="stereo">E</i>)-alkene</span></div>
+      </div>
+      <div class="nrow">
+        <div class="concept">Prime positions</div>
+        <div class="wrong">C3-prime sugar</div>
+        <div class="right"><span class="sci">C3′ sugar · C14</span></div>
+      </div>
+    </div>
+    <p class="footnote" style="margin-top:var(--s4)">Rendering note. Streamlit markdown carries Unicode (β, α, ′, ⁺, subscripts) directly; italic descriptors use <span style="font-family:var(--font-mono)">*R*</span> emphasis. A small <span style="font-family:var(--font-mono)">chem_notation()</span> helper in the data layer keeps this out of engine code.</p>
+  </div>
+</section>
+
+<!-- ============ COMPONENTS ============ -->
+<section id="components">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Components · 04</span>
+      <h2 class="h-xl">The parts, assembled.</h2>
+      <p>Every atom below maps to a Streamlit surface. Provenance tags are the load-bearing component: the trust boundary rendered as a chip, never a claim stated as fact.</p>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:var(--s4);align-items:start">
+      <div class="card">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">Buttons</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary">Run Claude reasoning</button>
+          <button class="btn btn-outline">Check this edit</button>
+          <button class="btn btn-ghost">About</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">Provenance tags</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="prov computed">computed</span>
+          <span class="prov lit">literature · cited</span>
+          <span class="prov reason">reasoning · claude-opus-4.8</span>
+          <span class="prov hyp">hypothesis</span>
+          <span class="prov uncited">uncited</span>
+        </div>
+        <p class="footnote" style="margin-top:14px">Replaces the em-dash form in <span style="font-family:var(--font-mono)">report.py</span>. Middle dot, color-coded by source class.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">Importance pills</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="imp high">high</span>
+          <span class="imp med">medium</span>
+          <span class="imp low">low</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">Tags</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="tag">target</span>
+          <span class="tag">liability</span>
+          <span class="tag">strategy-precedent</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--s4)">
+      <span class="eyebrow" style="display:block;margin-bottom:14px">Computed-property stat strip</span>
+      <div class="stats">
+        <div class="stat"><div class="n">386.5</div><div class="l">MW g/mol</div></div>
+        <div class="stat"><div class="n">2.90</div><div class="l">cLogP</div></div>
+        <div class="stat"><div class="n">66.76</div><div class="l">tPSA Å²</div></div>
+        <div class="stat"><div class="n">2</div><div class="l">HBD</div></div>
+        <div class="stat"><div class="n">5</div><div class="l">HBA</div></div>
+        <div class="stat"><div class="n">1</div><div class="l">Rot. bonds</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APPLIED MOCKUP ============ -->
+<section id="applied" class="lattice">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Applied · 05</span>
+      <h2 class="h-xl">The system, on the real app.</h2>
+      <p>The Workspace and Design-memo screens with live bufalin data. This is the reference the build ports into <span style="font-family:var(--font-mono)">theme.py</span>.</p>
+    </div>
+
+    <div class="appframe">
+      <div class="appbar">
+        <span class="dot" style="background:#D97070"></span>
+        <span class="dot" style="background:#D4A24A"></span>
+        <span class="dot" style="background:#68B18C"></span>
+        <span class="title">chansu · workspace</span>
+      </div>
+      <div class="apptabs">
+        <span class="apptab on">Workspace</span>
+        <span class="apptab">Design memo</span>
+        <span class="apptab">Sources</span>
+      </div>
+      <div class="appbody">
+
+        <!-- identity -->
+        <span class="eyebrow" style="display:block;margin-bottom:6px">Identity</span>
+        <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+          <h3 class="h-xl" style="font-size:2rem">Bufalin</h3>
+          <span class="tag">bufadienolide · cardiotonic steroid</span>
+        </div>
+        <div class="kv" style="max-width:760px;margin:16px 0 var(--s5)">
+          <div class="k">Formula</div><div class="v"><span class="sci">C<sub>24</sub>H<sub>34</sub>O<sub>5</sub></span></div>
+          <div class="k">SMILES</div><div class="v">C[C@]12CC[C@@H](C[C@H]1CC[C@@H]3[C@@H]2CC[C@]4([C@@]3(CC[C@@H]4C5=COC(=O)C=C5)O)C)O</div>
+          <div class="k">InChIKey</div><div class="v">QEEBRPGZBVVINN-BMPKRDENSA-N</div>
+          <div class="k">Source</div><div class="v">PubChem CID 9547215 <span class="prov computed" style="margin-left:6px">resolved</span></div>
+        </div>
+
+        <div class="col2">
+          <!-- viewer -->
+          <div>
+            <span class="eyebrow" style="display:block;margin-bottom:10px">Molecule viewer</span>
+            <div class="viewer">
+              <div class="ctrls">
+                <span class="b on">2D</span><span class="b">3D stick</span><span class="b">ball &amp; stick</span>
+              </div>
+              <!-- schematic steroid skeleton with highlighted regions -->
+              <svg width="300" height="220" viewBox="0 0 300 220" fill="none">
+                <g stroke="#98A2AD" stroke-width="1.6" fill="none">
+                  <polygon points="60,150 60,110 95,90 130,110 130,150 95,170"/>
+                  <polygon points="130,110 130,150 165,170 200,150 200,110 165,90"/>
+                  <polygon points="200,110 200,150 235,140 240,105 210,90"/>
+                </g>
+                <circle cx="60" cy="150" r="9" fill="rgba(212,162,74,0.22)" stroke="#D4A24A" stroke-width="1.5"/>
+                <circle cx="210" cy="90" r="9" fill="rgba(217,112,112,0.22)" stroke="#D97070" stroke-width="1.5"/>
+                <g stroke="#98A2AD" stroke-width="1.6" fill="none"><polygon points="240,105 268,98 272,70 250,58 232,74"/></g>
+                <circle cx="255" cy="80" r="14" fill="rgba(217,112,112,0.18)" stroke="#D97070" stroke-width="1.5"/>
+                <text x="46" y="176" font-family="'IBM Plex Mono'" font-size="10" fill="#D4A24A">C3</text>
+                <text x="214" y="84" font-family="'IBM Plex Mono'" font-size="10" fill="#D97070">C14</text>
+                <text x="258" y="58" font-family="'IBM Plex Mono'" font-size="10" fill="#D97070">C17</text>
+              </svg>
+              <div class="legend">
+                <span><i style="background:#D97070"></i>high</span>
+                <span><i style="background:#D4A24A"></i>medium</span>
+                <span><i style="background:#6E96B4"></i>low</span>
+              </div>
+            </div>
+            <p class="footnote" style="margin-top:10px">Schematic. The build renders RDKit 2D + py3Dmol with the importance overlay toggled on.</p>
+          </div>
+
+          <!-- grounding -->
+          <div>
+            <span class="eyebrow" style="display:block;margin-bottom:10px">Grounding · importance map</span>
+            <div class="grounding-item">
+              <div class="top"><span class="imp high">high</span><span class="name"><span class="sci">C14 <i class="stereo">β</i>-hydroxyl</span></span><span class="prov lit">literature · cited</span></div>
+              <div class="reason">Essential for <span class="sci">Na<sup>+</sup>/K<sup>+</sup>-ATPase</span> binding; hydrogen-bonds within the pocket (Thr797). Altering it strongly reduces inhibition.</div>
+              <span class="cite">Katz et al. J Biol Chem. 2010 · PMID 20388710</span>
+            </div>
+            <div class="grounding-item">
+              <div class="top"><span class="imp high">high</span><span class="name"><span class="sci">C17 <i class="stereo">α</i>-pyranone lactone</span></span><span class="prov lit">literature · cited</span></div>
+              <div class="reason">The activity warhead. Carbonyl hydrogen-bonds within the pocket; the ring fills the hydrophobic funnel (Leu125 / Ala323 / Ile800).</div>
+              <span class="cite">Laursen et al. PNAS. 2015 · PMID 25624492</span>
+            </div>
+            <div class="grounding-item">
+              <div class="top"><span class="imp med">medium</span><span class="name">C3 hydroxyl</span><span class="prov lit">literature · cited</span></div>
+              <div class="reason">Not essential for inhibition; tunes affinity and isoform selectivity. The preferred site to modify without destroying activity.</div>
+              <span class="cite">Katz et al. J Biol Chem. 2010 · PMID 20388710</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="rule">
+
+        <!-- gate seam -->
+        <span class="eyebrow" style="display:block;margin-bottom:12px">Two-way gate · edit check</span>
+        <div class="gate">
+          <div class="ghead"><span class="imp high">flagged</span><span class="h-md"><span class="sci">C14 tertiary hydroxyl</span> is in a high-importance region</span></div>
+          <div class="msg">This position hydrogen-bonds within the <span class="sci">Na<sup>+</sup>/K<sup>+</sup>-ATPase</span> pocket. Editing it is expected to reduce inhibition. <span class="cite" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)">Katz et al. 2010 · PMID 20388710</span></div>
+          <div class="override">
+            Override recorded by chemist. Reason:
+            <div class="in">Intended tuning of the warhead per the soft-drug design. Precedent: fluticasone.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MEMO + CHECKS ============ -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Applied · 06</span>
+      <h2 class="h-xl">Design memo, provenance intact.</h2>
+      <p>The memo leads with the faithful tagged artifact. The reasoning-checks panel above it reports the model's own safety layer honestly. When Claude declines, the deterministic floor loses nothing.</p>
+    </div>
+
+    <span class="eyebrow" style="display:block;margin-bottom:12px">Reasoning checks · claude-opus-4.8</span>
+    <div class="checks" style="margin-bottom:var(--s5)">
+      <div class="check"><span class="st pass">pass</span><span class="lbl">Deterministic grounding assembled</span><span class="why">6 targets · 4 liabilities · 3 regions</span></div>
+      <div class="check"><span class="st pass">pass</span><span class="lbl">Strategy matches from precedent library</span><span class="why">soft-drug / antedrug</span></div>
+      <div class="check"><span class="st declined">declined</span><span class="lbl">Compound-specific rationale</span><span class="why">bio safety layer</span></div>
+      <div class="check"><span class="st declined">declined</span><span class="lbl">Analog-by-analog narrative</span><span class="why">bio safety layer</span></div>
+      <div class="check"><span class="st declined">declined</span><span class="lbl">Liability-mechanism synthesis</span><span class="why">bio safety layer</span></div>
+      <div class="check"><span class="st declined">declined</span><span class="lbl">Design memo prose</span><span class="why">bio safety layer</span></div>
+    </div>
+    <p class="footnote" style="margin:-18px 0 var(--s5)">1 of 6 model steps returned; 5 declined by the model's safety layer. The deterministic memo below is complete regardless.</p>
+
+    <div class="memo"><span class="hd">DESIGN MEMO — Bufalin</span>
+Compound resolved: PubChem CID 9547215  <span class="go">[computed]</span>
+Class (annotation): bufadienolide (cardiotonic steroid)
+
+<span class="hd">Liability · rapid clearance</span>
+  Strategy: metabolically cleavable ester (soft drug)   <span class="go">[literature · cited]</span>
+    Precedent: fluticasone propionate   PMID 8968357
+  Candidate 1 · C3′ acetate ester
+    ΔcLogP <span class="g">+0.42</span>   ΔtPSA <span class="g">-9.2</span>   score <span class="g">0.71</span>
+    Position C3 hydroxyl · medium importance   <span class="go">[literature · cited]</span>
+
+<span class="hd">Liability · systemic toxicity</span>
+  Candidate 2 · C14 self-immolative carbamate
+    <span class="r">FLAG [high]:</span> edits C14 β-hydroxyl, a high-importance region
+      reason: essential for Na+/K+-ATPase binding (Katz 2010)
+      <span class="r">override:</span> intended tuning of the warhead (chemist)   <span class="go">[literature · cited]</span>
+
+<span class="hd">Reasoning synthesis</span>   <span class="go">[reasoning · declined]</span>
+  Model declined compound-specific narrative (bio safety layer).
+  Deterministic design above stands on its own.</div>
+  </div>
+</section>
+
+<!-- ============ VOICE ============ -->
+<section id="voice">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Voice · 07 · build rule</span>
+      <h2 class="h-xl">Scientific register. No AI tells.</h2>
+      <p>The copy discipline is the trust boundary made verbal. Terse, precise, provenance-hedged. The same rule that tags every claim keeps the prose unembellished.</p>
+    </div>
+
+    <div class="tone">
+      <div class="panel">
+        <h4>No em dashes</h4>
+        <div class="ex bad">Bufalin is potent — but toxic.</div>
+        <div class="ex good">Bufalin is potent. Systemic toxicity limits use.</div>
+      </div>
+      <div class="panel">
+        <h4>No AI phrasing</h4>
+        <div class="ex bad">Seamlessly unlock robust, cutting-edge insights.</div>
+        <div class="ex good">Matches four liabilities to precedent strategies.</div>
+      </div>
+      <div class="panel">
+        <h4>Hedge by provenance</h4>
+        <div class="ex bad">This modification improves solubility.</div>
+        <div class="ex good">Predicted ΔtPSA -9.2. Cited precedent: fluticasone.</div>
+      </div>
+      <div class="panel">
+        <h4>Do not over-explain</h4>
+        <div class="ex bad">Here is a comprehensive overview of what this section will show you in detail.</div>
+        <div class="ex good">C14 β-hydroxyl. High importance. Katz 2010.</div>
+      </div>
+    </div>
+
+    <p class="footnote" style="margin-top:var(--s5)">Banned lexis: delve, seamless(ly), unlock, leverage, robust, cutting-edge, elevate, harness, testament, realm, landscape, "not only … but also", rule-of-three cadence. Prefer nouns with units and claims bound to a source.</p>
+  </div>
+</section>
+
+<footer class="wrap" style="padding-top:var(--s6)">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <svg width="22" height="26" viewBox="0 0 26 30" fill="none"><path d="M13 1.5 L24 8 V22 L13 28.5 L2 22 V8 Z" stroke="#5A6570" stroke-width="1.4" fill="none"/><line x1="9" y1="15" x2="17" y2="15" stroke="#C99A46" stroke-width="2"/></svg>
+    <span class="mono" style="font-size:12px;color:var(--text-muted);letter-spacing:0.2em">CHANSU DESIGN SYSTEM · v0.1</span>
+  </div>
+  <p class="footnote">Proposal for review. Tokens, type registers, notation rules, and voice port into a locked build-rules doc and a rewritten <span style="font-family:var(--font-mono)">chansu/ui/theme.py</span>. Nothing in the engine changes.</p>
+</footer>
+
+</body>
+</html>

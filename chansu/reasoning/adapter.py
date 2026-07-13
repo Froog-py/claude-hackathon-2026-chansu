@@ -71,6 +71,11 @@ class ReasoningResponse:
     # empty, not a complete answer. Backend-specific detail (matched stop sequence, refusal cause)
     # is available on ``raw``.
     stop_reason: str = "end_turn"
+    # When ``stop_reason == "refusal"`` the backend also reports *why* it declined
+    # (Anthropic: ``stop_details.category`` — e.g. ``"bio"`` for a life-sciences safety
+    # false-positive). Surfaced first-class so the trust boundary can say not just *that* a
+    # call was declined but *what* the model's own safety layer flagged (PROJECT.md §6).
+    stop_category: Optional[str] = None
     usage: Optional[Usage] = None
     raw: Any = None                 # backend-native payload, for debugging only
 
@@ -94,8 +99,15 @@ def _is_timeout(exc: BaseException) -> bool:
 
 @runtime_checkable
 class ReasoningModel(Protocol):
-    """The contract. A backend implements ``complete``; ``stream`` is optional-but-required
-    by signature (wrap ``complete`` if the backend cannot stream)."""
+    """The contract. A backend implements ``complete`` and exposes ``name``; ``stream`` is
+    optional-but-required by signature (wrap ``complete`` if the backend cannot stream)."""
+
+    @property
+    def name(self) -> str:
+        """A short identifier for the backing model (e.g. its model id). This is what the reasoning
+        provenance tag names — ``[reasoning — <name>]`` — so the tag reflects whatever model is
+        actually behind the interface, with no hardcoded vendor."""
+        ...
 
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
         """One synchronous request -> response. Raise ``ReasoningError`` on failure."""
@@ -112,6 +124,8 @@ class ReasoningModel(Protocol):
 class BaseReasoningModel:
     """Convenience base: implement ``complete``; get a default single-chunk ``stream``."""
 
+    name: str = "reasoning-model"   # concrete backends override with their real model id
+
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
         raise NotImplementedError
 
@@ -122,6 +136,8 @@ class BaseReasoningModel:
 class EchoReasoningModel(BaseReasoningModel):
     """Trivial conformance stub (no real reasoning). Lets the interface be smoke-tested
     before any real backend exists. Not part of the production path."""
+
+    name = "echo"
 
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
         last = request.messages[-1].content if request.messages else ""
@@ -165,6 +181,11 @@ class ClaudeReasoningModel(BaseReasoningModel):
         self.default_max_tokens = default_max_tokens
         self.effort = effort
         self._client = client
+
+    @property
+    def name(self) -> str:
+        """The configured model id — what the reasoning provenance tag names."""
+        return self.model
 
     def _get_client(self) -> Any:
         if self._client is None:
@@ -224,6 +245,11 @@ class ClaudeReasoningModel(BaseReasoningModel):
         if content is None:
             raise ReasoningError("malformed Claude response: missing content")
 
+        # Refusal category (``stop_details.category``) when the backend supplies it — optional, and
+        # absent on non-refusal stops and on the unit-test mocks, so read it defensively.
+        stop_details = getattr(resp, "stop_details", None)
+        stop_category = getattr(stop_details, "category", None) if stop_details is not None else None
+
         text_parts: list[str] = []
         tool_calls: list[ToolCall] = []
         for block in content:
@@ -246,6 +272,7 @@ class ClaudeReasoningModel(BaseReasoningModel):
             text="".join(text_parts),
             tool_calls=tool_calls,
             stop_reason=stop_reason,
+            stop_category=stop_category,
             usage=usage,
             raw=resp,
         )

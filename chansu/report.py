@@ -18,13 +18,16 @@ otherwise it is rendered honestly as uncited — the renderer never prints a cit
 
 from __future__ import annotations
 
+from typing import Optional
+
 from rdkit.Chem import Mol
 
 from .core.matching import StrategyMatch, match_strategies
-from .core.models import Compound, Flag, Provenance, Strategy, tag
+from .core.models import Compound, Flag, Provenance, Strategy, reasoning_tag, tag
 from .core.pipeline import Candidate, DesignResult, design
 from .core.properties import compute_properties
 from .core.scoring import DEFAULT_WEIGHTS
+from .reasoning.design_reasoning import DesignReasoning
 
 _LIT = tag(Provenance.LITERATURE)
 _HYP = tag(Provenance.HYPOTHESIS)
@@ -49,7 +52,7 @@ def _lit(obj) -> str:
     c = getattr(obj, "citation", None)
     if c is not None and c.source:
         return f"{_LIT}  {c.source}"
-    return "[uncited — not literature-backed]"
+    return "[uncited · not literature-backed]"
 
 
 def _identity_lines(compound: Compound) -> list[str]:
@@ -113,7 +116,7 @@ def _matched_strategies_lines(compound: Compound, library: list[Strategy]) -> li
             else:
                 lines.append(
                     "         relevant, but this compound has no matching attachment point "
-                    "(describe / not directly actionable — no site fabricated)"
+                    "(describe / not directly actionable, no site fabricated)"
                 )
     return lines
 
@@ -180,15 +183,71 @@ def _described_lines(candidate: Candidate) -> list[str]:
     return lines
 
 
-def render_memo(compound: Compound, mol: Mol, result: DesignResult) -> str:
-    """Render an already-computed ``DesignResult`` (see ``design``). Any gate override the caller
-    recorded on the result is rendered here — orchestration and rendering are separate so the
-    override survives to the output (PROJECT.md §6)."""
+def _rationale_lines(liability_kind: str, group: list[Candidate], reasoning: Optional[DesignReasoning]) -> list[str]:
+    """The model's per-strategy rationale for this liability, tagged ``[reasoning — <model>]``. The
+    tag names the model that reasoned (from the adapter) and stands alone — the precedent it reasons
+    from carries its own ``[literature — cited]`` on the candidate lines below."""
+    if reasoning is None or not reasoning.available:
+        return []
+    lines: list[str] = []
+    seen: set[str] = set()
+    for c in group:
+        if c.strategy.id in seen:
+            continue
+        text = reasoning.rationale_for(liability_kind, c.strategy.id)
+        if not text:
+            continue
+        seen.add(c.strategy.id)
+        lines.append(f"    Why {c.strategy.id} applies:   {reasoning_tag(reasoning.model_name)}")
+        for para in text.split("\n"):
+            if para.strip():
+                lines.append(f"        {para.strip()}")
+    return lines
+
+
+def _reasoning_checks_lines(reasoning: DesignReasoning) -> list[str]:
+    """The reasoning-checks panel (PROJECT.md §6; Luke's transparency directive): every reasoning
+    call's pass/decline/why, never silently omitted. A decline is not a bug to hide — surfacing
+    'the model's own safety layer declined this one (bio)' is a live trust-boundary demonstration."""
+    checks = reasoning.checks
+    if not checks:
+        return []
+    passed = sum(1 for c in checks if c.passed)
+    declined = [c for c in checks if not c.passed]
+    # Categories among declines (e.g. {"bio"}); a refusal without a category still counts.
+    cats = sorted({c.category for c in declined if c.category})
+    cat_note = f" ({', '.join(cats)})" if cats else ""
+    lines = [f"  Reasoning checks: {passed} of {len(checks)} calls passed"]
+    if declined:
+        lines[0] += f"; {len(declined)} declined by the model's own safety layer{cat_note}."
+        lines.append("  (declines are shown, not hidden. This is the trust boundary working, not a failure.)")
+    else:
+        lines[0] += "."
+    for c in checks:
+        if c.passed:
+            lines.append(f"    - {c.label}: passed")
+        else:
+            why = f"{c.stop_reason}" + (f"/{c.category}" if c.category else "")
+            out = f", output_tokens={c.output_tokens}" if c.output_tokens is not None else ""
+            lines.append(f"    - {c.label}: declined ({why}{out})")
+    return lines
+
+
+def render_memo(
+    compound: Compound, mol: Mol, result: DesignResult, reasoning: Optional[DesignReasoning] = None
+) -> str:
+    """Render an already-computed ``DesignResult`` (see ``design``), optionally with the reasoning
+    model's runtime analysis (see ``reason_over_design``). Any gate override the caller recorded on
+    the result is rendered here — orchestration and rendering are separate so the override survives
+    to the output (PROJECT.md §6). ``reasoning`` is optional: absent or unavailable, the memo is the
+    deterministic design; present, the model's per-match rationale and synthesis appear, each tagged
+    ``[reasoning — <model>]``."""
     parent = compute_properties(mol)
 
-    lines = _header(f"DESIGN MEMO — {compound.name}  ({compound.id})")
-    lines.append("  Every pipeline claim is provenance-tagged; candidates are hypotheses for")
-    lines.append("  wet-lab validation, never predictions presented as fact (PROJECT.md §6).")
+    lines = _header(f"DESIGN MEMO · {compound.name}  ({compound.id})")
+    lines.append("  Every claim is provenance-tagged. Computed facts, cited literature, model reasoning,")
+    lines.append("  and wet-lab hypotheses are kept visibly distinct. Candidates are hypotheses for wet-lab")
+    lines.append("  validation, never predictions presented as fact (PROJECT.md §6).")
     lines += [""] + _identity_lines(compound)
 
     lines += _header("Grounding")
@@ -215,6 +274,7 @@ def render_memo(compound: Compound, mol: Mol, result: DesignResult) -> str:
             lines.append(_HONEST_FAILURE)
             continue
         group = by_liability.get(lib.kind, [])
+        lines += _rationale_lines(lib.kind, group, reasoning)
         valid = sorted(
             [c for c in group if c.analog.valid and c.score is not None],
             key=lambda c: c.score.total,
@@ -226,9 +286,29 @@ def render_memo(compound: Compound, mol: Mol, result: DesignResult) -> str:
         for candidate in described:
             lines += _described_lines(candidate)
 
+    if reasoning is not None:
+        lines += _header("Design synthesis")
+        if reasoning.available:
+            mode = "compound-specific" if reasoning.depth == "compound" else "strategy-level (compound-agnostic)"
+            lines.append(f"  Reasoning mode: {mode}.")
+            lines += _reasoning_checks_lines(reasoning)
+            if reasoning.narrative:
+                if reasoning.note:
+                    lines.append(f"  note: {reasoning.note}")
+                lines.append(f"  {reasoning_tag(reasoning.model_name)}")
+                for para in reasoning.narrative.split("\n"):
+                    lines.append(f"  {para.strip()}" if para.strip() else "")
+            else:
+                lines.append("  (the model produced no synthesis for this run.)")
+                if reasoning.note:
+                    lines.append(f"  diagnostic: {reasoning.note}")
+        else:
+            lines.append(f"  (reasoning not run. {reasoning.note}.)")
+            lines.append("  Showing the deterministic design; configure a reasoning backend for the reasoned memo.")
+
     lines += _header("Validation & honest limits")
     lines.append("  Candidates are grounded hypotheses; the tool never predicts binding, toxicity, or efficacy,")
-    lines.append("  and every candidate needs wet-lab validation. High-importance edits are flagged, not blocked —")
+    lines.append("  and every candidate needs wet-lab validation. High-importance edits are flagged, not blocked.")
     lines.append("  the tool surfaces the risk and the chemist overrides with a recorded reason (PROJECT.md §6).")
     # A compound may carry an author's validation narrative in data. It is labeled as such and NOT
     # presented as pipeline-verified — free-form prose is never laundered into a checked claim.

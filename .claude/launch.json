@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chansu-ui",
+      "runtimeExecutable": ".venv/bin/streamlit",
+      "runtimeArgs": [
+        "run",
+        "chansu/ui/app.py",
+        "--server.port",
+        "8501",
+        "--server.headless",
+        "true",
+        "--browser.gatherUsageStats",
+        "false"
+      ],
+      "port": 8501
+    },
+    {
+      "name": "chansu-verify",
+      "runtimeExecutable": ".venv/bin/streamlit",
+      "runtimeArgs": [
+        "run",
+        "chansu/ui/app.py",
+        "--server.port",
+        "8502",
+        "--server.headless",
+        "true",
+        "--browser.gatherUsageStats",
+        "false"
+      ],
+      "port": 8502
+    }
+  ]
+}

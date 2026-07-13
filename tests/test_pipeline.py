@@ -81,8 +81,8 @@ def test_memo_is_the_tagged_must_ship_deliverable():
 
     assert "DESIGN MEMO" in memo
     assert "score =" in memo and "similarity-to-parent" in memo  # transparent rubric shown
-    assert "[hypothesis — needs wet-lab validation]" in memo      # candidates tagged as hypotheses
-    assert "[literature — cited]" in memo and "PMID 20388710" in memo  # cited grounding
+    assert "[hypothesis · needs wet-lab validation]" in memo      # candidates tagged as hypotheses
+    assert "[literature · cited]" in memo and "PMID 20388710" in memo  # cited grounding
     assert "FLAG [warning]" in memo and "high-importance" in memo.lower()  # two-way gate visible
     assert "overridable" in memo                                   # gate allows override
     assert "no strategy in the current curated library" in memo    # bounded honest failure
