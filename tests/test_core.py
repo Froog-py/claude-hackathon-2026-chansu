@@ -350,7 +350,7 @@ def test_grounding_report_is_cited_and_declines_to_overclaim():
     from chansu.report import render_grounding
 
     text = render_grounding(load_compound("bufalin"), load_strategies())
-    assert "[literature — cited]" in text
+    assert "[literature · cited]" in text
     assert "PMID 20388710" in text  # Katz 2010 (NCBI-verified) is surfaced
     assert "no strategy in the current curated library" in text  # bounded honest failure
     assert "formulation-delivery" not in text  # invents no out-of-scope route
@@ -359,7 +359,7 @@ def test_grounding_report_is_cited_and_declines_to_overclaim():
 
 def test_uncited_claim_is_never_tagged_as_literature_cited():
     """A programmatic compound with uncited roles must render as uncited, never a false
-    [literature — cited] (Codex P1: the renderer never emits a cited tag it can't back)."""
+    [literature · cited] (Codex P1: the renderer never emits a cited tag it can't back)."""
     from chansu.core.models import Compound, Liability, Target
     from chansu.report import render_grounding
 
@@ -371,8 +371,8 @@ def test_uncited_claim_is_never_tagged_as_literature_cited():
         liabilities=[Liability(kind="poor_solubility", detail="detail")],
     )
     text = render_grounding(compound, [])
-    assert "[uncited — not literature-backed]" in text
-    assert "[literature — cited]" not in text  # nothing here is cited, so nothing claims it
+    assert "[uncited · not literature-backed]" in text
+    assert "[literature · cited]" not in text  # nothing here is cited, so nothing claims it
 
 
 def test_duplicate_liability_kind_is_rejected_at_load():

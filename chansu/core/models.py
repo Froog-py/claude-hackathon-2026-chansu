@@ -20,19 +20,34 @@ class Provenance(str, Enum):
     LITERATURE = "literature"          # rendered as "cited" — requires a real Citation
     HYPOTHESIS = "hypothesis"          # needs wet-lab validation
     OUT_OF_SCOPE = "out_of_scope"      # e.g. formulation / delivery
+    REASONING = "reasoning"            # model-generated reasoning; tag names the model (see below)
 
 
 _PROVENANCE_TAGS = {
     Provenance.COMPUTED: "[computed]",
-    Provenance.LITERATURE: "[literature — cited]",
-    Provenance.HYPOTHESIS: "[hypothesis — needs wet-lab validation]",
+    Provenance.LITERATURE: "[literature · cited]",
+    Provenance.HYPOTHESIS: "[hypothesis · needs wet-lab validation]",
     Provenance.OUT_OF_SCOPE: "[out of scope]",
 }
 
 
 def tag(provenance: Provenance) -> str:
-    """Human-readable provenance tag for output (PROJECT.md §6)."""
+    """Human-readable provenance tag for a fixed-vocabulary claim (PROJECT.md §6). Reasoning is
+    model-specific and has no fixed string — use ``reasoning_tag(model_name)`` for it."""
+    if provenance == Provenance.REASONING:
+        raise ValueError("reasoning provenance names its model; use reasoning_tag(model_name)")
     return _PROVENANCE_TAGS[provenance]
+
+
+def reasoning_tag(model_name: str) -> str:
+    """Provenance for model-generated reasoning (PROJECT.md §6). Structurally enforced exactly like
+    ``[literature — cited]``: it names the actual reasoning model that produced the text (the
+    adapter's ``name``) and **cannot be emitted without one** — no model, no tag. It asserts
+    model-reasoning provenance *only*; it makes no citation claim of its own (the precedent the
+    model reasons from carries its own ``[literature — cited]`` separately)."""
+    if not model_name or not model_name.strip():
+        raise ValueError("reasoning_tag requires the actual reasoning model's name; no model, no tag")
+    return f"[reasoning · {model_name}]"
 
 
 @dataclass(frozen=True)

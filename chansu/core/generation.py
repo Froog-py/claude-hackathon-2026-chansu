@@ -46,6 +46,23 @@ def resolve_position(mol: Mol, locator: StructureLocator) -> Optional[int]:
     return match[locator.target_atom]
 
 
+def region_match_atoms(mol: Mol, locator: StructureLocator) -> list[int]:
+    """All atom indices of the locator's *first* SMARTS match — the whole region, for highlighting.
+
+    Uses ``matches[0]`` (the same deterministic match ``resolve_position`` anchors to), so a highlighted
+    region always contains that anchor atom and 2D/3D highlighting stays consistent with the gate/position
+    logic. Returns ``[]`` when the SMARTS is invalid or does not match — a region that cannot be located is
+    simply not highlighted, never an error. Generic: no compound knowledge, structure only.
+    """
+    pattern = Chem.MolFromSmarts(locator.smarts)
+    if pattern is None:
+        return []
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
+        return []
+    return list(matches[0])
+
+
 def _reacting_site(product: Mol, mapnum: int) -> Optional[int]:
     """Parent atom index that carried the mapped reacting atom, via RDKit reaction bookkeeping.
 

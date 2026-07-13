@@ -82,6 +82,19 @@ def test_claude_adapter_surfaces_refusal_without_faking_completion():
         client=_fake_client(lambda **k: types.SimpleNamespace(content=[], stop_reason="refusal", usage=None))
     ).complete(ReasoningRequest(system="", messages=[Message("user", "x")]))
     assert resp.stop_reason == "refusal" and resp.text == ""
+    assert resp.stop_category is None  # no stop_details on this response -> read defensively
+
+
+def test_claude_adapter_captures_refusal_category():
+    """A refusal carries a category (``stop_details.category``, e.g. ``"bio"``) — surfaced first-class
+    so the trust boundary can say *what* the model's safety layer declined, not just that it did."""
+    resp = ClaudeReasoningModel(
+        client=_fake_client(lambda **k: types.SimpleNamespace(
+            content=[], stop_reason="refusal",
+            stop_details=types.SimpleNamespace(category="bio"), usage=None,
+        ))
+    ).complete(ReasoningRequest(system="", messages=[Message("user", "x")]))
+    assert resp.stop_reason == "refusal" and resp.stop_category == "bio"
 
 
 def test_claude_adapter_normalizes_api_failure_to_reasoning_error():
