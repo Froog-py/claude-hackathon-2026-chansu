@@ -85,6 +85,14 @@ def test_id_collision_flags_not_fails():
     assert any(c.level == "flag" and c.subject == "id" for c in report.checks)
 
 
+def test_unsafe_id_hard_fails():
+    # path traversal / bad filename chars must be rejected before write_record builds a path
+    for bad in ["../etc/passwd", "a/b", "has space", "UPPER", "trailing.dot"]:
+        report = ingest.validate_record({**_VALID, "id": bad}, load_strategies())
+        assert not report.ok, f"{bad!r} should be rejected"
+        assert any(c.level == "fail" and c.subject == "id" for c in report.checks)
+
+
 # --- Task 3: advisory soft-flags -------------------------------------------------------------
 
 def test_unresolvable_locator_flags():

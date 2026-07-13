@@ -9,6 +9,7 @@ becomes ``fail`` checks in a report, never an exception thrown at the caller.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -64,6 +65,9 @@ def derive_vocabulary(strategies: list) -> tuple:
 
 
 _REQUIRED = ("id", "name")
+# id becomes a filename (data/compounds/<id>.json); constrain it to a safe slug so a crafted id
+# cannot traverse the path or produce an unreadable file.
+_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
 
 
 def _structural_checks(record: dict, existing_ids) -> tuple:
@@ -105,6 +109,8 @@ def _structural_checks(record: dict, existing_ids) -> tuple:
         ))
 
     rid = record.get("id")
+    if rid and not _ID_RE.match(str(rid)):
+        checks.append(Check("fail", f"id {rid!r} is not a safe slug (lowercase letters, digits, underscores only).", subject="id"))
     if rid and rid in existing_ids:
         checks.append(Check("flag", f"A compound with id {rid!r} already exists; importing overwrites it.", subject="id"))
 
