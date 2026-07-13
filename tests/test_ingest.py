@@ -129,6 +129,23 @@ def test_cited_claim_gets_a_link_not_a_flag():
     assert any(c.link and "pubmed" in c.link for c in target_checks)
 
 
+def test_missing_position_subfield_caught_by_loadability_guard():
+    # valid locator but no id/label: passes the per-field checks, but must be caught as a clean fail
+    # rather than crashing compound_from_dict on import.
+    rec = {**_VALID, "modifiable_positions": [{"locator": {"smarts": "[OX2H]"}}]}
+    report = ingest.validate_record(rec, load_strategies())
+    assert not report.ok
+    assert any(c.level == "fail" for c in report.checks)
+
+
+def test_bad_importance_value_flags():
+    rec = {**_VALID, "importance_map": [
+        {"id": "r1", "importance": "critical", "reason": "x", "locator": {"smarts": "[OX2H]"}}
+    ]}
+    report = ingest.validate_record(rec, load_strategies())
+    assert any(c.level == "flag" and c.subject == "importance_map" for c in report.checks)
+
+
 # --- Task 4: write path ----------------------------------------------------------------------
 
 def test_write_record_round_trips(tmp_path):

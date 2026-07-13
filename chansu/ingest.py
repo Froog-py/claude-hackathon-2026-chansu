@@ -176,6 +176,15 @@ def _advisory_checks(record: dict, mol, attach_vocab: set, liab_vocab: set) -> l
                 subject="liabilities",
             ))
 
+    for r in record.get("importance_map", []):
+        imp = r.get("importance")
+        if imp is not None and imp not in ("high", "medium", "low"):
+            checks.append(Check(
+                "flag",
+                f"Importance {imp!r} is not one of high/medium/low; it will not highlight correctly.",
+                subject="importance_map",
+            ))
+
     checks += _citation_checks("targets", record.get("targets", []), "name")
     checks += _citation_checks("liabilities", record.get("liabilities", []), "kind")
     checks += _citation_checks("importance_map", record.get("importance_map", []), "id")
@@ -190,10 +199,20 @@ def validate_record(record: dict, strategies: list, existing_ids=frozenset()) ->
     if mol is not None:
         attach_vocab, liab_vocab = derive_vocabulary(strategies)
         checks += _advisory_checks(record, mol, attach_vocab, liab_vocab)
-    ok = not any(c.level == "fail" for c in checks)
     out = record
     if canonical:
         out = {**record, "structure": {**record.get("structure", {}), "smiles": canonical}}
+    # Loadability guard: if nothing hard-failed above, the record must actually build a Compound.
+    # This catches anything the per-field checks miss (a position/region/target/liability missing a
+    # required key, a bad locator target_atom) as a clean fail, so import can never crash the loader.
+    if not any(c.level == "fail" for c in checks):
+        try:
+            compound_from_dict(out)
+        except KeyError as exc:
+            checks.append(Check("fail", f"Record is missing a required field: {exc}.", subject="record"))
+        except Exception as exc:
+            checks.append(Check("fail", f"Record does not load as a compound: {exc}", subject="record"))
+    ok = not any(c.level == "fail" for c in checks)
     return IngestReport(ok=ok, record=out, checks=checks, compound_id=record.get("id"))
 
 

@@ -104,13 +104,21 @@ def _paste_and_gate(strategies: list) -> None:
     if report.flags:
         ack = st.checkbox("I have reviewed the flags above and want to import anyway.", key="ingest_ack")
     if st.button("Import compound", type="primary", disabled=not ack, key="ingest_import"):
-        write_record(report, source="claude-science-import")
-        state.available_compound_ids.clear()  # refresh the selector now, not on the 60s TTL
-        st.markdown(
-            f"<div class='cs-pass'>Imported <b>{html.escape(str(report.compound_id))}</b>. "
-            "Select it in the sidebar.</div>",
-            unsafe_allow_html=True,
-        )
+        try:
+            write_record(report, source="claude-science-import")
+        except Exception as exc:  # never crash the tab on a write failure; report it calmly
+            st.markdown(
+                f"<div class='cs-flagcard'><span class='cs-flag'>error</span>Could not write the record: "
+                f"{html.escape(str(exc))}</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            state.available_compound_ids.clear()  # refresh the selector now, not on the 60s TTL
+            st.markdown(
+                f"<div class='cs-pass'>Imported <b>{html.escape(str(report.compound_id))}</b>. "
+                "Select it in the sidebar.</div>",
+                unsafe_allow_html=True,
+            )
 
 
 def render_ingest(strategies: list) -> None:
