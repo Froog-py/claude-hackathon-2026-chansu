@@ -7,10 +7,14 @@ presentation over the ``Reference`` list.
 
 from __future__ import annotations
 
+import html
+
 import streamlit as st
 
 from ..references import build_reference_index
 from .notation import sci
+
+_META = "font-family:var(--font-mono);font-size:11px;letter-spacing:0.02em;color:var(--ink-3)"
 
 _GROUP_BY = {
     "Subject": "subjects",
@@ -58,9 +62,9 @@ def _render_card(ref) -> None:
         for role, subject in ref.backs:
             st.markdown(f"- `{role}` → {sci(subject)}")
         if ref.pmid:
-            st.caption(f"PMID {ref.pmid}")
+            st.markdown(f"<span style='{_META}'>PMID {html.escape(str(ref.pmid))}</span>", unsafe_allow_html=True)
         if ref.doi:
-            st.caption(f"DOI {ref.doi}")
+            st.markdown(f"<span style='{_META}'>DOI {html.escape(str(ref.doi))}</span>", unsafe_allow_html=True)
         for note in ref.notes:
             st.caption(note)
 

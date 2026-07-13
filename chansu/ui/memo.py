@@ -39,12 +39,12 @@ def _human(identifier: str) -> str:
     return identifier.replace("_", " ").strip().capitalize()
 
 
-def _delta(value: float, parent: float) -> str:
+def _delta(value: float, parent: float, places: int = 2) -> str:
     """A property value with its signed change from the parent, mono, no semantic colour (a delta is
-    neither brand nor data-palette meaning)."""
-    d = round(value - parent, 2)
+    neither brand nor data-palette meaning). ``places`` matches the workspace stat strip's precision."""
+    d = round(value - parent, places)
     sign = "+" if d >= 0 else ""
-    return f"{value} <span style='color:var(--ink-3)'>({sign}{d})</span>"
+    return f"{value:.{places}f} <span style='color:var(--ink-3)'>({sign}{d:.{places}f})</span>"
 
 
 # --- reasoning-checks panel (calm; declines are the trust boundary working) ------------------
@@ -108,7 +108,7 @@ def _candidate_card(candidate, parent, index: int) -> None:
     cite = _prov("lit") if (s.citation and s.citation.source) else _prov("uncited")
     src = f"<div class='cs-cite'>{html.escape(s.citation.source)}</div>" if (s.citation and s.citation.source) else ""
     head = f"<div class='t'>{index}. {html.escape(_human(s.id))}{pos}</div>"
-    sub = f"<div class='cs-sub'>Precedent: {chem(s.precedent_drug, serif=True)}</div>{src}<div style='margin-top:4px'>{cite}</div>"
+    sub = f"<div class='cs-sub'>Precedent: {chem(s.precedent_drug, serif=False)}</div>{src}<div style='margin-top:4px'>{cite}</div>"
 
     analog = (f"<div style='font-family:var(--font-mono);font-size:12px;color:var(--ink-2);margin-top:12px;"
               f"word-break:break-all'>{html.escape(candidate.analog.product_smiles)}</div>"
@@ -120,8 +120,8 @@ def _candidate_card(candidate, parent, index: int) -> None:
                   f" + {sc.weights['druglikeness']}·{sc.druglikeness}</div>")
     p = candidate.properties
     delta_line = (f"<div style='font-family:var(--font-mono);font-size:12px;color:var(--ink-2);margin-top:4px'>"
-                  f"{formula(p['formula'])} · MW {_delta(p['mw'], parent.mw)} · logP {_delta(p['logp'], parent.logp)}"
-                  f" · TPSA {_delta(p['tpsa'], parent.tpsa)}</div>"
+                  f"{formula(p['formula'])} · MW {_delta(p['mw'], parent.mw, 1)} · logP {_delta(p['logp'], parent.logp, 2)}"
+                  f" · TPSA {_delta(p['tpsa'], parent.tpsa, 1)}</div>"
                   f"<div style='margin-top:4px'>{_prov('computed')}</div>")
 
     st.markdown(f"<div class='cs-card'>{head}{sub}{analog}{score_line}{delta_line}{_flags_html(candidate.flags)}</div>",
@@ -135,7 +135,7 @@ def _described_card(candidate) -> None:
     src = f"<div class='cs-cite'>{html.escape(s.citation.source)}</div>" if (s.citation and s.citation.source) else ""
     st.markdown(
         f"<div class='cs-card'><div class='t'>{html.escape(_human(s.id))}{pos}</div>"
-        f"<div class='cs-sub'>Precedent: {chem(s.precedent_drug, serif=True)}</div>{src}"
+        f"<div class='cs-sub'>Precedent: {chem(s.precedent_drug, serif=False)}</div>{src}"
         f"<div style='margin-top:4px'>{cite}</div>"
         f"<div class='cs-sub' style='margin-top:12px'>{chem(candidate.analog.description, serif=False)}</div>"
         f"<div style='margin-top:4px'>{_prov('hyp')}</div>{_flags_html(candidate.flags)}</div>",
