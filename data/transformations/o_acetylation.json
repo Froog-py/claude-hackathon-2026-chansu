@@ -4,5 +4,5 @@
   "reaction_smarts": "[C:1][OX2H1:2]>>[C:1][O:2]C(C)=O",
   "reacting_atom_mapnum": 2,
   "applies_to_attachment_types": ["hydroxyl", "secondary_alcohol", "tertiary_alcohol"],
-  "description": "Caps a free hydroxyl as an acetate ester - a minimal, well-precedented handle and a stand-in for prodrug-style masking. Day-1 spike transformation; the strategy-backed library expands on Day 2."
+  "description": "Caps a free hydroxyl as an acetate ester: a minimal, well-precedented handle and a stand-in for prodrug-style masking. Day-1 spike transformation; the strategy-backed library expands on Day 2."
 }

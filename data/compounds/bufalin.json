@@ -12,7 +12,7 @@
   "annotations": {
     "class": "bufadienolide (cardiotonic steroid)",
     "note": "Class is annotation only, never engine logic. importance_map / targets / liabilities are curated from the research log with real, NCBI-verified citations (PROJECT.md §6, §7).",
-    "validation_note": "Validation (PROJECT.md §12): the soft-drug / antedrug avenue reproduces the by-hand 'Bufalone' design's core reasoning - mask activity with a metabolically cleavable group (precedent: fluticasone). The by-hand design places that group on the C17 bufadienolide lactone (the warhead); the tool independently flags editing that essential region as high-importance (Katz 2010 / Laursen 2015), which the chemist overrides as the intended tuning of the warhead."
+    "validation_note": "Validation (PROJECT.md §12): the soft-drug / antedrug avenue reproduces the by-hand 'Bufalone' design's core reasoning: mask activity with a metabolically cleavable group (precedent: fluticasone). The by-hand design places that group on the C17 bufadienolide lactone (the warhead); the tool independently flags editing that essential region as high-importance (Katz 2010 / Laursen 2015), which the chemist overrides as the intended tuning of the warhead."
   },
   "modifiable_positions": [
     {
@@ -49,7 +49,7 @@
       "id": "c3_hydroxyl",
       "locator": {"smarts": "[CH1][OX2H1]", "target_atom": 1, "label": "C3-OH oxygen"},
       "importance": "medium",
-      "reason": "The C3 hydroxyl / sugar position is not essential for inhibition but strongly tunes binding affinity and isoform selectivity (the glycosylation handle) - a preferred site to modify without destroying activity.",
+      "reason": "The C3 hydroxyl / sugar position is not essential for inhibition but strongly tunes binding affinity and isoform selectivity (the glycosylation handle). A preferred site to modify without destroying activity.",
       "citation": {"label": "Katz A, et al. Selectivity of digitalis glycosides for isoforms of human Na,K-ATPase. J Biol Chem. 2010;285(25):19582-92.", "source": "PMID 20388710 | DOI 10.1074/jbc.M110.119248"}
     }
   ],
@@ -73,7 +73,7 @@
   "liabilities": [
     {
       "kind": "systemic_toxicity",
-      "detail": "Cardiotoxicity and a narrow therapeutic window from on-target Na+/K+-ATPase inhibition in cardiac tissue - the primary barrier to systemic use.",
+      "detail": "Cardiotoxicity and a narrow therapeutic window from on-target Na+/K+-ATPase inhibition in cardiac tissue (the primary barrier to systemic use).",
       "citation": {"label": "Botelho AFM, et al. A review of cardiac glycosides: structure, toxicokinetics, clinical signs, diagnosis and antineoplastic potential. Toxicon. 2019;158:63-68.", "source": "PMID 30529380 | DOI 10.1016/j.toxicon.2018.11.429"}
     },
     {
