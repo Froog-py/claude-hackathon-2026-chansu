@@ -82,8 +82,8 @@ def build_reference_index(compound: Compound, strategies: list) -> list:
                 return ref
             if doi and ref.doi and ref.doi.lower() == doi.lower():
                 return ref
-            if not pmid and not doi and ref.key == label_key:
-                return ref  # label-only citations dedupe on the exact label
+            if not pmid and not doi and label_key in (ref.key, f"label:{ref.citation.strip().lower()}"):
+                return ref  # a label-only citation reuses any ref with the same label, incl. identifier-backed
         return None
 
     def _add_url(ref: Reference, url: Optional[str]) -> None:

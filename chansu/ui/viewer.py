@@ -84,7 +84,11 @@ def _render_3d(compound, mol, style, highlight_on: bool) -> None:
         st.warning("3D coordinates could not be generated for this structure. Showing the skeletal view instead.")
         _render_2d(compound, mol, highlight_on)
         return
-    import py3Dmol
+    try:
+        import py3Dmol
+    except ImportError:
+        _render_2d(compound, mol, highlight_on)
+        return
 
     _base_key, style_dict = style
     view = py3Dmol.view(width=_W, height=_H)

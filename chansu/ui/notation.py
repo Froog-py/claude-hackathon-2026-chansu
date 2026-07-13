@@ -55,8 +55,10 @@ def sci(text) -> str:
 
 
 def chem(text, serif: bool = True) -> str:
-    """Escaped glyphs plus italic descriptors, for ``unsafe_allow_html`` blocks."""
-    inner = _italics(_glyphs(html.escape(str(text))))
+    """Escaped glyphs plus italic descriptors, for ``unsafe_allow_html`` blocks. Glyphs are applied
+    before escaping so ``_primes`` sees a raw ``'`` (escaping turns it into ``&#x27;`` first); escaping
+    then neutralises any HTML before ``_italics`` adds its markup."""
+    inner = _italics(html.escape(_glyphs(str(text))))
     return f"<span class='cs-chem'>{inner}</span>" if serif else inner
 
 
