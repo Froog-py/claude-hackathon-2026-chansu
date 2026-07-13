@@ -68,8 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     positional: list[str] = []
     i = 0
     while i < len(argv):
-        if argv[i] == "--depth" and i + 1 < len(argv):
-            depth = argv[i + 1]
+        if argv[i] == "--depth":
+            depth = argv[i + 1] if i + 1 < len(argv) else None  # trailing --depth: fails the check below
             i += 2
         else:
             positional.append(argv[i])

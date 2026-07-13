@@ -107,20 +107,15 @@ def _grounding(compound) -> None:
 
 
 def render_workspace(compound, mol, result) -> None:
+    from .gate import render_gate_seam
+    from .viewer import render_viewer
+
     _hero(compound)
     st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
-    try:
-        from .viewer import render_viewer
-        render_viewer(compound, mol)
-    except ImportError:
-        st.info("Molecule viewer. Building next (2D Lewis + highlighting, then 3D).")
+    render_viewer(compound, mol)
     st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
     _properties(mol)
     st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
-    try:
-        from .gate import render_gate_seam
-        render_gate_seam(compound, mol)
-        st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
-    except ImportError:
-        pass
+    render_gate_seam(compound, mol)
+    st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
     _grounding(compound)

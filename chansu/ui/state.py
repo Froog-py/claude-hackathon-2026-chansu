@@ -16,7 +16,9 @@ from ..core.pipeline import design
 from ..reasoning.adapter import ClaudeReasoningModel
 
 
-@st.cache_data(show_spinner=False)
+# A short TTL so a compound JSON dropped into data/compounds/ appears in the selector without an app
+# restart or manual cache clear; the glob is cheap.
+@st.cache_data(show_spinner=False, ttl=60)
 def available_compound_ids() -> list:
     """Every compound with a data file — the selector's options. A new compound dropped into
     ``data/compounds/`` appears here automatically (the §5 acceptance test, live)."""
@@ -24,7 +26,7 @@ def available_compound_ids() -> list:
     return sorted(p.stem for p in directory.glob("*.json"))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=60)
 def default_compound_id() -> str:
     return load_config().get("demo_compound") or (available_compound_ids() or [""])[0]
 
@@ -35,7 +37,7 @@ def get_design(compound_id: str):
     Callers recompute ``mol`` with :func:`mol_for` (cheap) rather than caching an RDKit object."""
     compound = load_compound(compound_id)
     mol = to_mol(compound)
-    result = design(compound, mol, load_strategies())
+    result = design(compound, mol, get_strategies())
     return compound, result
 
 
