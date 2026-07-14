@@ -4,6 +4,7 @@ Reusable by the UI and a future MCP surface.
 """
 from __future__ import annotations
 
+from .core.models import reasoning_tag
 from .report import render_memo
 
 
@@ -19,6 +20,10 @@ def build_comparison_readme(compound, mol, result, reasonings: dict) -> str:
     ]
     for label, reasoning in reasonings.items():
         out += ["", f"### {label}"]
+        # Name the actual backend that produced this section's claims, not the UI label alone (§6).
+        model_name = getattr(reasoning, "model_name", None)
+        if model_name:
+            out.append(reasoning_tag(model_name))
         if reasoning is None or not reasoning.available:
             note = getattr(reasoning, "note", None) or "not run"
             out.append(f"_No reasoning: {note}._")

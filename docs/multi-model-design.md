@@ -19,7 +19,7 @@ behind it. Feature #2 adds one adapter, a registry, a redesigned page, and an ex
 ## Problem
 
 Today there is one hardcoded backend: a "Run Claude reasoning" button wired to a single
-`ClaudeReasoningModel`. We want: pick any of Claude / OpenAI / local (or **All**), run, see each
+`ClaudeReasoningModel`. We want: pick any of Claude / OpenAI / local (one or several at once), run, see each
 model's analysis side by side with its own honest checks, download the comparison, and add a new
 model the same way — **securely** (keys never in the app or the repo).
 
@@ -55,14 +55,15 @@ OpenAICompatibleReasoningModel(
     model: str,                     # e.g. "gpt-4o" or "qwen2.5:14b-instruct"
     base_url: str,                  # "https://api.openai.com/v1" or "http://<win-ip>:11434/v1"
     api_key_env: Optional[str],     # env var holding the key ("OPENAI_API_KEY"); None for keyless local
-    default_max_tokens: int = 4096,
+    default_max_tokens: int = 2048,
 )
 ```
 
 - Uses the `openai` SDK with `base_url` overridden (it targets OpenAI, Ollama, and vLLM unchanged), or
   `httpx` if we want zero new deps — decided at build time; the mapping is the same either way.
-- **Reads the key from `os.environ[api_key_env]` at call time; never stores, logs, or holds it.** A
-  missing key raises `ReasoningError` (honest failure), surfaced as "not configured", not a crash.
+- **Reads the key from `os.environ[api_key_env]` at call time** (the client is rebuilt if the key
+  changes), and never persists or logs it. A missing key raises `ReasoningError` (honest failure),
+  surfaced as "not configured", not a crash.
 - Maps `ReasoningRequest` → chat messages (system + messages) and the response → `ReasoningResponse`
   (`text`, `stop_reason`, `usage`). A refusal / content-filter stop is mapped to the honest
   `stop_reason` the memo already understands, exactly like the Claude adapter.
@@ -119,8 +120,9 @@ set up — Claude, OpenAI, local — and new ones added.
 
 Replaces the single "Run Claude reasoning" button on the Design-memo screen.
 
-- **Model multi-select** — pills/checkboxes for each `ready` entry (Claude / ChatGPT / Local / added),
-  plus **All**. Default selection = **Claude**. Un-ready models are shown disabled with their status.
+- **Model multi-select** — a multiselect of every `ready` entry (Claude / ChatGPT / Local / added);
+  select one, several, or all of them to run them together. Default selection = **Claude**. Un-ready
+  models are not offered here; their status is shown in the connect-a-model panel.
 - A generic **"Run reasoning"** button (no vendor in the label).
 - On run, for each selected model: `reason_over_design(compound, result, build_model(entry), depth)`
   (the function is already model-agnostic) → one `DesignReasoning` per model.

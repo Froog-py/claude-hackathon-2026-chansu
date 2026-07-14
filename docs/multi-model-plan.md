@@ -31,7 +31,7 @@
 
 **Interfaces:**
 - Consumes (from `chansu/reasoning/adapter.py`): `BaseReasoningModel`, `Message`, `ReasoningRequest`, `ReasoningResponse`, `ReasoningError`, `ReasoningTimeout`, `Usage`, `_is_timeout`.
-- Produces: `OpenAICompatibleReasoningModel(model, base_url, api_key_env=None, default_max_tokens=4096, client=None)` implementing `ReasoningModel`; `name -> model`; `complete(request) -> ReasoningResponse`; internal `_api_key()`, `_to_response(resp)`.
+- Produces: `OpenAICompatibleReasoningModel(model, base_url, api_key_env=None, default_max_tokens=2048, client=None)` implementing `ReasoningModel`; `name -> model`; `complete(request) -> ReasoningResponse`; internal `_api_key()`, `_to_response(resp)`.
 
 - [ ] **Step 0: Install the dependency**
 
@@ -132,7 +132,7 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
     var holding the key (None for keyless local servers). Inject ``client`` to unit-test without the SDK."""
 
     def __init__(self, model: str, base_url: str, api_key_env: Optional[str] = None,
-                 default_max_tokens: int = 4096, client: Any = None) -> None:
+                 default_max_tokens: int = 2048, client: Any = None) -> None:
         self.model = model
         self.base_url = base_url
         self.api_key_env = api_key_env
@@ -199,7 +199,7 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `.venv/bin/python -m pytest tests/test_openai_compatible.py -q`
-Expected: PASS (4 tests).
+Expected: PASS. (The shipped suite has since grown; the code is authoritative per the header note.)
 
 - [ ] **Step 5: Commit** (get Luke's OK)
 
@@ -264,9 +264,9 @@ def test_save_and_load_endpoint_round_trips(monkeypatch, tmp_path):
 
 def test_local_base_url_override(monkeypatch, tmp_path):
     monkeypatch.setattr(registry, "_CONFIG", tmp_path / "models.local.json")
-    registry.save_endpoint("local", "Local (Qwen)", "http://192.168.1.242:11434/v1", "qwen2.5:14b-instruct")
+    registry.save_endpoint("local", "Local (Qwen)", "http://192.0.2.10:11434/v1", "qwen2.5:14b-instruct")
     local = {e.id: e for e in registry.load_registry()}["local"]
-    assert local.base_url == "http://192.168.1.242:11434/v1"
+    assert local.base_url == "http://192.0.2.10:11434/v1"
 ```
 
 - [ ] **Step 2: Run to verify it fails**
@@ -368,7 +368,7 @@ def save_endpoint(id: str, label: str, base_url: str, model: str, api_key_env: O
 - [ ] **Step 4: Add the gitignore entry**
 
 Append to `.gitignore`:
-```
+```text
 # user-added model endpoints (non-secret config; kept local)
 data/models.local.json
 ```
@@ -376,7 +376,7 @@ data/models.local.json
 - [ ] **Step 5: Run to verify it passes**
 
 Run: `.venv/bin/python -m pytest tests/test_registry.py -q`
-Expected: PASS (5 tests).
+Expected: PASS. (The shipped suite has since grown; the code is authoritative per the header note.)
 
 - [ ] **Step 6: Commit** (get Luke's OK)
 
@@ -564,7 +564,7 @@ def render_model_setup() -> None:
     with st.expander("Edit or add an endpoint"):
         eid = st.text_input("Id", placeholder="local  (or a new slug like 'perplexity')")
         label = st.text_input("Label", placeholder="Local (Qwen)")
-        base_url = st.text_input("Base URL", placeholder="http://192.168.1.242:11434/v1")
+        base_url = st.text_input("Base URL", placeholder="http://<host>:11434/v1")
         model = st.text_input("Model", placeholder="qwen2.5:14b-instruct")
         api_key_env = st.text_input("API key env var (blank if none)", placeholder="OPENAI_API_KEY")
         if st.button("Save endpoint", type="primary", disabled=not (eid and base_url and model)):
@@ -589,7 +589,7 @@ def render_model_setup() -> None:
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS (all prior + the new smoke; `test_generic_engine_rule` green).
 
-- [ ] **Step 6: Verify in the browser** (`chansu-ui`): the sidebar **Models** expander lists Claude / ChatGPT / Local with status chips (Claude/OpenAI show "key not set" until `.env` has the keys; Local shows "ready"). Edit the Local endpoint to `http://192.168.1.242:11434/v1` and save → it persists (check `data/models.local.json`). Console/logs clean.
+- [ ] **Step 6: Verify in the browser** (`chansu-ui`): the sidebar **Models** expander lists Claude / ChatGPT / Local with status chips (Claude/OpenAI show "key not set" until `.env` has the keys; Local shows "ready"). Edit the Local endpoint to your server, e.g. `http://<host>:11434/v1`, and save → it persists (check `data/models.local.json`). Console/logs clean.
 
 - [ ] **Step 7: Run `chansu-theme-review`** on `chansu/ui/models.py`; fix findings.
 
@@ -726,7 +726,7 @@ git commit -m "feat(ui): download the model comparison as a README"
 
 ## Live smoke (manual, after the build)
 
-With `.env` holding `ANTHROPIC_API_KEY` + `OPENAI_API_KEY` (Luke sets them; never read here) and Ollama serving on `http://192.168.1.242:11434/v1`: on the memo page pick **All**, Run, and confirm Claude + ChatGPT + Qwen each produce a section or an honest decline, then download the README. (Producer B's model picker wiring to this registry is a thin follow-up in that feature, out of scope here.)
+With `.env` holding `ANTHROPIC_API_KEY` + `OPENAI_API_KEY` (Luke sets them; never read here) and Ollama serving on `http://<host>:11434/v1`: on the memo page select every model, Run, and confirm Claude + ChatGPT + Qwen each produce a section or an honest decline, then download the README. (Producer B's model picker wiring to this registry is a thin follow-up in that feature, out of scope here.)
 
 ## Self-review
 
