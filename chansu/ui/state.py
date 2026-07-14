@@ -13,6 +13,7 @@ import streamlit as st
 
 from ..core.loaders import DEFAULT_DATA_DIR, load_compound, load_config, load_strategies, to_mol
 from ..core.pipeline import design
+from ..reasoning import registry
 from ..reasoning.adapter import ClaudeReasoningModel
 
 
@@ -56,3 +57,14 @@ def get_reasoning_model() -> ClaudeReasoningModel:
     """One reasoning backend for the session. Construction reads no credentials — a missing key/backend
     only surfaces when the memo screen actually runs a call, where it degrades honestly."""
     return ClaudeReasoningModel(effort="medium")
+
+
+def model_entries():
+    """Registry entries paired with their live status, computed fresh each run so a just-set env key or
+    a newly-added endpoint shows immediately. Returns ``list[(ModelEntry, status)]``."""
+    return [(e, registry.status(e)) for e in registry.load_registry()]
+
+
+def reasoning_model_for(entry):
+    """Build the reasoning backend for a registry entry (Claude or an OpenAI-compatible endpoint)."""
+    return registry.build_model(entry)

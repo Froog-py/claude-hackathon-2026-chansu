@@ -21,6 +21,7 @@ from ..core.properties import compute_properties
 from ..reasoning.adapter import ReasoningError
 from ..reasoning.design_reasoning import reason_over_design
 from ..report import render_memo
+from . import state
 from .notation import chem, formula, sci
 
 _PROV_LABEL = {"computed": "computed", "lit": "literature · cited", "hyp": "hypothesis", "uncited": "uncited"}
@@ -245,38 +246,92 @@ def _memo_body(compound, mol, result, reasoning) -> None:
 
 # --- the tab ---------------------------------------------------------------------------------
 
-def render_memo_tab(compound, mol, result, model) -> None:
+def _model_column(entry, reasoning, err) -> None:
+    """One model's reasoning in a compare column: its provenance tag, its checks, and its synthesis
+    (or an honest decline). A backend error renders calm, never as an alarm."""
+    st.markdown(f"<div style='margin-top:4px'>{_prov_reason(entry.model)}</div>", unsafe_allow_html=True)
+    # A run was attempted and failed whenever `err` is not None — including an empty message. Guard on
+    # presence, not truthiness, so a blank-message failure still renders calm and never falls through
+    # to _render_checks(None).
+    if err is not None or reasoning is None:
+        detail = f" {html.escape(err)}" if err else ""
+        st.markdown(f"<div class='cs-declined' style='margin-top:6px'>Backend unavailable.{detail}</div>",
+                    unsafe_allow_html=True)
+        return
+    _render_checks(reasoning)
+    if reasoning.available and reasoning.narrative:
+        if reasoning.note:
+            st.markdown(f"<div class='cs-sub' style='margin-top:6px'>{chem(reasoning.note, serif=False)}</div>",
+                        unsafe_allow_html=True)
+        st.markdown(sci(reasoning.narrative.strip()))
+    elif reasoning.available:
+        note = f" {chem(reasoning.note, serif=False)}" if reasoning.note else ""
+        st.markdown(f"<div class='cs-declined' style='margin-top:6px'>No synthesis for this run.{note}</div>",
+                    unsafe_allow_html=True)
+
+
+def render_memo_tab(compound, mol, result) -> None:
     depth = st.session_state.get("depth", "strategy")
-    key = f"reasoning:{compound.id}:{depth}"
 
     st.markdown("<p class='cs-eyebrow'>Design memo</p>", unsafe_allow_html=True)
     st.markdown(
         "<div class='cs-sub'>Deterministic and provenance-tagged. It renders with no model call. Reasoning is "
-        "an optional layer on top.</div>",
+        "an optional layer on top, from one model or several: independent viewpoints corroborate, and "
+        "disagreement flags where to look.</div>",
         unsafe_allow_html=True,
     )
 
-    left, right = st.columns([1, 2])
-    with left:
-        run = st.button("Run Claude reasoning", type="primary", use_container_width=True)
-    with right:
-        st.caption(f"Depth: {depth}. Run to add rationales on top of the deterministic memo.")
-    if run:
-        with st.spinner("Reasoning over the design"):
-            try:
-                st.session_state[key] = reason_over_design(compound, result, model, depth=depth)
-            except ReasoningError as exc:
-                st.session_state[key] = None
-                st.markdown(
-                    f"<div class='cs-declined'>Reasoning backend unavailable. {html.escape(str(exc))}. "
-                    "The deterministic memo below stands.</div>",
-                    unsafe_allow_html=True,
-                )
+    entries = state.model_entries()
+    ready = [e for e, s in entries if s == "ready"]
+    st.markdown("<p class='cs-eyebrow' style='margin-top:12px'>Reasoning models</p>", unsafe_allow_html=True)
+    if not ready:
+        st.markdown(
+            "<div class='cs-declined'>No reasoning model is ready. Set an API key in your .env, or add a local "
+            "endpoint under Models in the sidebar.</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        by_label = {e.label: e for e in ready}
+        picked = st.multiselect(
+            "Reasoning models", list(by_label), default=[ready[0].label], label_visibility="collapsed",
+            help="Pick one or several. Agreement corroborates a conclusion; disagreement flags where a single "
+                 "model should not be trusted.",
+        )
+        if st.button("Run reasoning", type="primary", disabled=not picked):
+            for label in picked:
+                entry = by_label[label]
+                k = f"reasoning:{compound.id}:{depth}:{entry.id}"
+                st.session_state.pop(k + ":err", None)
+                with st.spinner(f"Running {entry.label}"):
+                    try:
+                        st.session_state[k] = reason_over_design(
+                            compound, result, state.reasoning_model_for(entry), depth=depth)
+                    except Exception as exc:  # per-model isolation: one model's failure never sinks the others
+                        st.session_state[k] = None
+                        st.session_state[k + ":err"] = str(exc)
 
-    reasoning = st.session_state.get(key)
-    if reasoning is not None:
-        with st.container(border=True):
-            _render_checks(reasoning)
+    active = []
+    for entry, _s in entries:
+        k = f"reasoning:{compound.id}:{depth}:{entry.id}"
+        reasoning = st.session_state.get(k)
+        err = st.session_state.get(k + ":err")
+        if reasoning is not None or err is not None:  # presence, not truthiness (empty message counts)
+            active.append((entry, reasoning, err))
+    if active:
+        st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
+        st.markdown("<p class='cs-eyebrow'>Model reasoning</p>", unsafe_allow_html=True)
+        for col, (entry, reasoning, err) in zip(st.columns(len(active)), active):
+            with col:
+                _model_column(entry, reasoning, err)
+        ran = {entry.label: reasoning for entry, reasoning, err in active if reasoning is not None}
+        if ran:
+            from ..comparison import build_comparison_readme
+
+            st.download_button(
+                "Download comparison (README.md)",
+                data=build_comparison_readme(compound, mol, result, ran),
+                file_name=f"{compound.id}-design-comparison.md", mime="text/markdown",
+            )
 
     st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
     view = st.segmented_control(
@@ -284,6 +339,6 @@ def render_memo_tab(compound, mol, result, model) -> None:
         key=f"memoview_{compound.id}", label_visibility="collapsed",
     ) or "Readable"
     if view == "Readable":
-        _memo_body(compound, mol, result, reasoning)
+        _memo_body(compound, mol, result, None)
     else:
-        st.code(render_memo(compound, mol, result, reasoning), language="text")
+        st.code(render_memo(compound, mol, result, None), language="text")

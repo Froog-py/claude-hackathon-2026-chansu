@@ -16,6 +16,20 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# Load a local .env so API keys are picked up from a gitignored file (keys never live in code or git).
+try:
+    from dotenv import load_dotenv  # noqa: E402
+
+    load_dotenv(_REPO_ROOT / ".env")
+except ImportError:
+    # python-dotenv is the optional 'app' extra. Without it a .env is not auto-loaded and keys must be
+    # exported in the shell — say so on stderr (visible in the server logs) rather than fail silently.
+    print(
+        "chansu: python-dotenv not installed; .env will NOT be auto-loaded (export keys in your shell, "
+        "or: uv pip install --python .venv/bin/python python-dotenv)",
+        file=sys.stderr,
+    )
+
 import streamlit as st  # noqa: E402
 
 from chansu.ui import state, theme  # noqa: E402
@@ -76,6 +90,10 @@ def _sidebar():
         )
 
         st.divider()
+        from chansu.ui.models import render_model_setup
+        with st.expander("Models"):
+            render_model_setup()
+
         if st.button("About", use_container_width=True):
             _about()
     return compound_id
@@ -85,7 +103,6 @@ def main() -> None:
     compound_id = _sidebar()
     compound, result = state.get_design(compound_id)
     mol = state.mol_for(compound)
-    model = state.get_reasoning_model()
 
     workspace_tab, memo_tab, sources_tab, ingest_tab = st.tabs(
         ["Workspace", "Design memo", "Sources / Reference", "Add compound"]
@@ -93,7 +110,7 @@ def main() -> None:
     with workspace_tab:
         render_workspace(compound, mol, result)
     with memo_tab:
-        render_memo_tab(compound, mol, result, model)
+        render_memo_tab(compound, mol, result)
     with sources_tab:
         render_sources(compound, state.get_strategies())
     with ingest_tab:
