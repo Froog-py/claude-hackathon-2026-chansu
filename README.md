@@ -48,6 +48,10 @@ uv pip install --python .venv/bin/python rdkit numpy pytest
 
 # Tests (includes the generic-engine acceptance test and the generation spike)
 .venv/bin/python -m pytest -q
+
+# Run the Streamlit app (multi-model reasoning; loads API keys from a local .env via python-dotenv)
+uv pip install --python .venv/bin/python streamlit anthropic openai python-dotenv
+.venv/bin/streamlit run chansu/ui/app.py
 ```
 
 ## Day-1 status (foundation + the two spikes)

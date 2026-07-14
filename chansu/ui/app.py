@@ -22,7 +22,13 @@ try:
 
     load_dotenv(_REPO_ROOT / ".env")
 except ImportError:
-    pass
+    # python-dotenv is the optional 'app' extra. Without it a .env is not auto-loaded and keys must be
+    # exported in the shell — say so on stderr (visible in the server logs) rather than fail silently.
+    print(
+        "chansu: python-dotenv not installed; .env will NOT be auto-loaded (export keys in your shell, "
+        "or: uv pip install --python .venv/bin/python python-dotenv)",
+        file=sys.stderr,
+    )
 
 import streamlit as st  # noqa: E402
 

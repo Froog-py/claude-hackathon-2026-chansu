@@ -250,8 +250,12 @@ def _model_column(entry, reasoning, err) -> None:
     """One model's reasoning in a compare column: its provenance tag, its checks, and its synthesis
     (or an honest decline). A backend error renders calm, never as an alarm."""
     st.markdown(f"<div style='margin-top:4px'>{_prov_reason(entry.model)}</div>", unsafe_allow_html=True)
-    if err:
-        st.markdown(f"<div class='cs-declined' style='margin-top:6px'>Backend unavailable. {html.escape(err)}</div>",
+    # A run was attempted and failed whenever `err` is not None — including an empty message. Guard on
+    # presence, not truthiness, so a blank-message failure still renders calm and never falls through
+    # to _render_checks(None).
+    if err is not None or reasoning is None:
+        detail = f" {html.escape(err)}" if err else ""
+        st.markdown(f"<div class='cs-declined' style='margin-top:6px'>Backend unavailable.{detail}</div>",
                     unsafe_allow_html=True)
         return
     _render_checks(reasoning)
@@ -311,7 +315,7 @@ def render_memo_tab(compound, mol, result) -> None:
         k = f"reasoning:{compound.id}:{depth}:{entry.id}"
         reasoning = st.session_state.get(k)
         err = st.session_state.get(k + ":err")
-        if reasoning is not None or err:
+        if reasoning is not None or err is not None:  # presence, not truthiness (empty message counts)
             active.append((entry, reasoning, err))
     if active:
         st.markdown("<hr class='cs-rule'>", unsafe_allow_html=True)
