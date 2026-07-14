@@ -43,24 +43,41 @@ _BUILTIN_IDS = {e.id for e in _BUILTIN}
 
 
 def _load_overrides() -> dict:
-    if _CONFIG.exists():
-        try:
-            return json.loads(_CONFIG.read_text())
-        except Exception:
-            return {}
-    return {}
+    """Read the gitignored config. On an unreadable/unparseable file, or one that is not a JSON object,
+    degrade to no overrides so the built-in models stay available (a bad local file never bricks the
+    app). Malformed *individual* entries are skipped in ``load_registry``, not here."""
+    if not _CONFIG.exists():
+        return {}
+    try:
+        data = json.loads(_CONFIG.read_text())
+    except (OSError, ValueError):  # unreadable file or invalid JSON — not every exception
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def load_registry() -> list:
-    """Built-in entries (with any base_url/model overrides applied) plus user-added endpoints."""
+    """Built-in entries (with any persisted overrides applied) plus user-added endpoints. A built-in's
+    label, base_url, model, and api_key_env can each be overridden; its id and kind never change. A
+    malformed user entry (not an object, or missing a required field) is skipped rather than crashing
+    the whole registry with a KeyError."""
     overrides = _load_overrides()
     entries = []
     for e in _BUILTIN:
-        ov = overrides.get(e.id, {})
-        entries.append(replace(e, base_url=ov.get("base_url", e.base_url), model=ov.get("model", e.model)))
+        ov = overrides.get(e.id)
+        if not isinstance(ov, dict):
+            ov = {}
+        entries.append(replace(
+            e,
+            label=ov.get("label", e.label),
+            base_url=ov.get("base_url", e.base_url),
+            model=ov.get("model", e.model),
+            api_key_env=ov.get("api_key_env", e.api_key_env),
+        ))
     for eid, cfg in overrides.items():
         if eid in _BUILTIN_IDS:
             continue
+        if not isinstance(cfg, dict) or not (cfg.get("label") and cfg.get("base_url") and cfg.get("model")):
+            continue  # skip a malformed user entry instead of raising mid-registry
         entries.append(
             ModelEntry(
                 id=eid, label=cfg["label"], kind="openai_compatible", model=cfg["model"],
@@ -88,7 +105,14 @@ def build_model(entry: ModelEntry) -> ReasoningModel:
 
 
 def save_endpoint(id: str, label: str, base_url: str, model: str, api_key_env: Optional[str] = None) -> None:
-    """Persist a built-in override or a new endpoint to the gitignored config (never a key)."""
+    """Persist a built-in override or a new endpoint to the gitignored config (never a key). A plain
+    ``http://`` endpoint is refused when an ``api_key_env`` is set, so a key never travels in cleartext;
+    keyless http (a local/LAN model) and any https endpoint are allowed."""
+    if api_key_env and base_url.strip().lower().startswith("http://"):
+        raise ValueError(
+            "refusing to store an http:// endpoint that carries an API key (the key would travel in "
+            "cleartext). Use https for a keyed endpoint; http is allowed only for a keyless local model."
+        )
     overrides = _load_overrides()
     overrides[id] = {"label": label, "base_url": base_url, "model": model, "api_key_env": api_key_env}
     _CONFIG.parent.mkdir(parents=True, exist_ok=True)
