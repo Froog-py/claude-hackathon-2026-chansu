@@ -2,7 +2,9 @@
 fake client, so no network or SDK is exercised)."""
 import pytest
 
-from chansu.reasoning.adapter import Message, ReasoningError, ReasoningRequest
+import sys
+
+from chansu.reasoning.adapter import Message, ReasoningError, ReasoningRequest, ToolSpec
 from chansu.reasoning.openai_compatible import OpenAICompatibleReasoningModel
 
 
@@ -92,3 +94,38 @@ def test_missing_key_raises_reasoning_error():
     m = OpenAICompatibleReasoningModel(model="m", base_url="http://x/v1", api_key_env="DEFINITELY_UNSET_XYZ")
     with pytest.raises(ReasoningError):
         m._api_key()
+
+
+def test_missing_finish_reason_is_malformed_not_stop():
+    # A response with no finish_reason must not be promoted to a successful "stop"/end_turn; the
+    # reasoning layer would then trust incomplete text. It is honest failure instead (§6).
+    with pytest.raises(ReasoningError):
+        _model(_Resp(finish=None)).complete(_req())
+
+
+def test_tools_are_rejected_not_silently_dropped():
+    req = ReasoningRequest(system="s", messages=[Message("user", "u")], tools=[ToolSpec("t", "d", {})])
+    with pytest.raises(ReasoningError):
+        _model(_Resp()).complete(req)
+
+
+def test_owned_client_rebuilds_when_env_key_changes(monkeypatch):
+    # The owned client is read at call time: a key rotated in the environment after the first call is
+    # honored, not pinned to the first value (§6). Uses a fake `openai` module (no SDK, no network).
+    built_keys = []
+
+    class _FakeSDKClient:
+        def __init__(self, base_url, api_key, timeout):
+            built_keys.append(api_key)
+            self.chat = _Chat(_Resp())
+
+    class _FakeOpenAIModule:
+        OpenAI = _FakeSDKClient
+
+    monkeypatch.setitem(sys.modules, "openai", _FakeOpenAIModule)
+    m = OpenAICompatibleReasoningModel(model="m", base_url="http://x/v1", api_key_env="ROTKEY")
+    monkeypatch.setenv("ROTKEY", "k1")
+    m.complete(_req())
+    monkeypatch.setenv("ROTKEY", "k2")
+    m.complete(_req())
+    assert built_keys == ["k1", "k2"]

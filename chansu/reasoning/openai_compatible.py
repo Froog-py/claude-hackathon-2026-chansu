@@ -37,13 +37,17 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
         base_url: str,
         api_key_env: Optional[str] = None,
         default_max_tokens: int = 2048,
+        timeout: float = 180.0,
         client: Any = None,
     ) -> None:
         self.model = model
         self.base_url = base_url
         self.api_key_env = api_key_env
         self.default_max_tokens = default_max_tokens
+        self.timeout = timeout   # a finite per-request deadline so a hung backend fails, not hangs
         self._client = client
+        self._owns_client = client is None      # an injected client (tests) is used as-is
+        self._client_key: Optional[str] = None   # the env key the owned client was built with
 
     @property
     def name(self) -> str:
@@ -58,15 +62,27 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
         return "local"  # keyless servers ignore it, but the SDK requires a non-empty value
 
     def _get_client(self) -> Any:
-        if self._client is None:
+        # An injected client (unit tests) is used as-is. An owned client is built lazily and rebuilt
+        # whenever the call-time key changes, so a key set or rotated in the environment after the
+        # first call is honored — the key is read at call time, never pinned across a change (§6).
+        if not self._owns_client:
+            return self._client
+        key = self._api_key()
+        if self._client is None or self._client_key != key:
             try:
                 import openai
             except ImportError as exc:  # optional dependency
                 raise ReasoningError("the 'openai' package is required (pip install openai)") from exc
-            self._client = openai.OpenAI(base_url=self.base_url, api_key=self._api_key())
+            self._client = openai.OpenAI(base_url=self.base_url, api_key=key, timeout=self.timeout)
+            self._client_key = key
         return self._client
 
     def complete(self, request: ReasoningRequest) -> ReasoningResponse:
+        if request.tools:
+            # This adapter neither forwards nor decodes tool calls (adapter.Message documents tool
+            # support as receive-only and not modeled here). Reject rather than silently drop them,
+            # so a caller never believes tools were sent.
+            raise ReasoningError("the OpenAI-compatible adapter does not support tool calls")
         client = self._get_client()
         # Cap the request to a sensible visible-token budget (see default_max_tokens): a Claude-sized
         # 16k budget is wasteful here and, for a local server, kinder to keep modest.
@@ -105,7 +121,12 @@ class OpenAICompatibleReasoningModel(BaseReasoningModel):
             raise ReasoningError("malformed response: no choices")
         choice = choices[0]
         text = getattr(getattr(choice, "message", None), "content", None) or ""
-        finish = getattr(choice, "finish_reason", None) or "stop"
+        finish = getattr(choice, "finish_reason", None)
+        if not finish:
+            # No finish_reason means the completion's stop condition is unknown; the reasoning layer
+            # trusts text only for end_turn/stop_sequence, so we cannot assert this answer is whole.
+            # Treat it as malformed rather than promote it to a successful "stop"/end_turn (§6).
+            raise ReasoningError("malformed response: missing finish_reason")
         raw_usage = getattr(resp, "usage", None)
         usage = (
             Usage(
